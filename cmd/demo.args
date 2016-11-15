@@ -1,0 +1,11 @@
+#!/bin/sh
+# Copyright 2016 The dev Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+
+# Use readonly or declare -r to ensure they're read only.
+
+
+readonly arg_hello="Hello"
+readonly arg_world="world"

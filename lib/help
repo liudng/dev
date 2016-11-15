@@ -1,0 +1,220 @@
+#!/bin/sh
+# Copyright 2016 The dev Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+#
+# Useage information.
+#
+dev_help_useage() {
+    declare files="<command-file>"
+    if [[ ! -z "$1" ]]
+    then
+        files="$1"
+    fi
+
+    echo "Usage: dev [options] $files <command-function> [command-options]"
+    echo ""
+}
+
+#
+# List all command files.
+#
+dev_help_files() {
+    echo "These are the all aviliable <command-file>s:"
+    echo ""
+
+    for i in $(ls $glb_cmd); do
+        if [[ "${i: -4}" == ".cmd" ]]
+        then
+            echo "  ${i:0:-4}"
+        fi
+    done
+
+    echo ""
+}
+
+#
+# List all functions of included <command-file>s.
+#
+dev_help_functions() {
+    echo "These are the all aviliable <command-function>s:"
+    echo ""
+
+    for i in $(compgen -A function); do
+        if [[ "${i:0:4}" == "cmd_" ]]
+        then
+            echo -e "  ${i:4} \t in $glb_cmd_path:$i()"
+        fi
+    done
+
+    echo ""
+}
+
+#
+# List all options
+#
+dev_help_options() {
+    declare opt
+    declare msg
+    declare als
+
+    echo "Optional arguments:"
+    echo ""
+
+    for i in $(compgen -A function); do
+        if [[ "${i:0:4}" == "ofn_" ]]; then
+            opt="${i:4}"
+            msg="opt_$opt"
+            als="als_$opt"
+            if [[ ! -z "${!als}" ]]; then
+                echo -e "  -${!als}, --${opt//_/-} \t ${!msg}"
+            else
+                echo -e "  --${opt//_/-} \t ${!msg}"
+            fi
+        fi
+    done
+
+    echo ""
+}
+
+#
+# List all options
+#
+opt_options="List all options"
+als_options=""
+ofn_options() {
+    glb_run=0
+
+    declare opt
+    declare msg
+    declare als
+    declare ret
+
+    for i in $(compgen -A function); do
+        if [[ "${i:0:4}" == "ofn_" ]]; then
+            opt="${i:4}"
+            msg="opt_$opt"
+            als="als_$opt"
+            if [[ ! -z "${!als}" ]]; then
+                ret="$ret --${opt//_/-} -${!als}"
+            else
+                ret="$ret --${opt//_/-}"
+            fi
+        fi
+    done
+    echo "${ret:1}"
+}
+
+#
+# Use the --help option for usage information.
+# Useage:
+#     dev --help
+#
+opt_help="Help topic and usage information"
+als_help="h"
+ofn_help() {
+    glb_run=0
+
+    if [[ $# -le 0 || -z "$1" ]]; then
+        dev_help_useage
+        dev_help_files
+        dev_help_options
+    else
+        dev_help_useage "$1"
+        dev_help_functions
+        dev_help_options
+    fi
+}
+
+#
+# List all command files or functions
+# Useage:
+#     dev --completion
+#     dev --completion <command-file>
+#
+opt_completion="List all command files or functions"
+als_completion=""
+ofn_completion() {
+    glb_run=0
+
+    declare ret
+    declare i
+
+    if [[ $# -le 0 || -z "$1" ]]; then
+        for i in $(ls $glb_cmd); do
+            if [[ "${i: -4}" == ".cmd" ]]; then
+                ret="$ret ${i:0:-4}"
+            fi
+        done
+    else
+        for i in $(compgen -A function); do
+            if [[ "${i:0:4}" == "cmd_" ]]; then
+                ret="$ret ${i:4}"
+            fi
+        done
+    fi
+    echo "${ret:1}"
+}
+
+#
+# Verify that all nodes are ready to run the command.
+# Useage:
+#     dev -v <command-file> <command-function> <command-arguments>
+#     dev --verify <command-file> <command-function> <command-arguments>
+#
+opt_verify="Verify that all nodes are ready to run the command"
+als_verify="v"
+ofn_verify() {
+    glb_run=0
+
+    declare i
+
+    # File not found: $glb_cmd_path.cmd
+    if [[ $glb_file_loaded -eq 0 ]]; then
+        return 0
+    fi
+
+    for i in $(compgen -A function); do
+        if [[ "${i:0:4}" == "cmd_" && "${i:4}" == "$2" ]]; then
+            echo "$1 ${i:4}"
+            break
+        fi
+    done
+}
+
+#
+# Run the command on the specified machines.
+# Useage:
+#     dev -b xxx,xxx <command-file> <command-function> <command-arguments>
+#     dev --batch=xxx,xxx <command-file> <command-function> <command-arguments>
+#
+opt_batch="Run the command on the specified machines"
+als_batch="b"
+ofn_batch() {
+    glb_run_level=1
+}
+
+#
+# Only run on local machine.
+# Useage:
+#     dev -l <command-file> <command-function> <command-arguments>
+#     dev --local <command-file> <command-function> <command-arguments>
+#
+opt_local="Run the command on the specified machines"
+als_local="l"
+ofn_local() {
+    glb_run_level=2
+}
+
+#
+# Run a system(Non-dev) command.
+# Useage:
+#     dev -s <command-file> <command-function> <command-arguments>
+#     dev --system <command-file> <command-function> <command-arguments>
+#
+opt_system="Run a system(Non-dev) command"
+als_system="s"
+ofn_system() {
+    glb_sys_cmd=1
+}

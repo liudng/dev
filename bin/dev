@@ -1,0 +1,403 @@
+#!/bin/sh
+# Copyright 2016 The dev Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+#
+# Shell Style Guide: https://google.github.io/styleguide/shell.xml
+#
+# dev_xxx: Framwork functions, declared in dev.
+# glb_xxx: Global variables, declared in dev.
+#
+# ofn_xxx: Option functions.
+# opt_xxx: Option description variables.
+# als_xxx: Alias of options.
+#
+# cfg_xxx: Configurations, declared in config file.
+#
+# arg_xxx: Arguments for commands, declared in xxx.args files.
+#                     For exmpale:
+#                         readonly demo_hello="Hello"
+#                         demo_world="world"
+#
+# hlp_xxx: Command help text, declared in xxx.cmd files by user.
+# cmd_xxx: Command function, declared in xxx.cmd files by user.
+#
+# xxx: Local varialbes, declared in xxx.cmd files by user. Declare
+#      function-specific variables with local. Declaration and assignment
+#      should be on different lines. for example:
+#          local file
+#          file="/path/to/file/name"
+#      or (only in function)
+#          declare file="/path/to/file/name"
+#
+
+# trace ERR through pipes
+set -o pipefail
+
+# set -e : exit the script if any statement returns a non-true return value
+set -o errexit
+
+#
+# Init a global constaiont
+# Useage:
+#     dev_const <name> <config-value> <default-value>
+#
+dev_const() {
+    declare the_name="glb_$1"
+
+    if [[ -z "$2" ]]; then
+        declare -gr "$the_name=$3"
+    else
+        declare -gr "$the_name=$2"
+    fi
+}
+
+#
+# Init subdirectory.
+# Useage:
+#     dev_sub_dir <directory-name> <config-value> <default-value>
+#
+dev_sub_dir() {
+    dev_const "$1" "$2" "$3"
+
+    declare the_name="glb_$1"
+    declare the_path="${!the_name}"
+
+    # Create directory
+    if [[ ! -d $the_path ]]; then
+        mkdir -p $the_path
+    fi
+}
+
+#
+# Useage:
+#     dev_wk_dir <dev-path>
+#
+dev_wk_dir() {
+    declare wk_dir="$1"
+
+    if [[ -L "$1" ]]; then
+        wk_dir=$(readlink -f "$1")
+    fi
+
+    declare -gr glb_wk_dir="$(dirname $(dirname $(realpath $wk_dir)))"
+    # echo "Working directory: $glb_wk_dir" >&2
+}
+
+#
+# Global variables
+#
+dev_global() {
+    # The sudo prefix
+    if [[ "$(whoami)" != "root" ]]; then
+        declare -gr glb_sudo=""
+    else
+        declare -gr glb_sudo="sudo"
+    fi
+
+    # Include configuration file
+    for cfgfile in "/etc/dev.conf", "$HOME/.dev.conf", "$glb_wk_dir/etc/dev.conf"; do
+        if [[ -f $cfgfile ]]; then
+            . $cfgfile
+            break # FIXME support multiple config file.
+        fi
+    done
+
+    # Command file directory: glb_cmd
+    dev_const "cmd" "$cfg_cmd" "$glb_wk_dir/cmd"
+
+    # Log directory: glb_log
+    dev_sub_dir "log" "$cfg_log" "$glb_wk_dir/log"
+
+    # Var directory: glb_var
+    dev_sub_dir "var" "$cfg_var" "$glb_wk_dir/var"
+
+    # Private key: glb_private_key
+    dev_const "private_key" "$cfg_private_key" "$HOME/.ssh/id_rsa"
+
+    # Is run command
+    declare -g glb_run=1
+
+    # Run level
+    # 0: All nodes, 1: Specifies nodes, 2: Local machine
+    declare -g glb_run_level=0
+
+    # Non-dev command
+    declare -g glb_sys_cmd=0
+
+    # Command file load status
+    declare -g glb_file_loaded=0
+}
+
+#
+# Prepare command files
+#
+dev_load_files() {
+    # Command file
+    if [[ $# -ge 1 && ! -z "$1" ]]; then
+        declare -g glb_cmd_path="$glb_cmd/$1"
+
+        if [[ "$1" == "dev" ]]; then
+            # Cannot set 'dev' as a command file
+            return 0
+        fi
+
+        if [[ ! -f $glb_cmd_path.cmd ]]; then
+            # File not found: $glb_cmd_path.cmd
+            return 0
+        fi
+
+        # Include arguments file
+        if [[ -f $glb_cmd_path.args ]]; then
+            . $glb_cmd_path.args
+        fi
+
+        # Include command file
+        . $glb_cmd_path.cmd
+        glb_file_loaded=1
+    fi
+}
+
+#
+# Execute the command
+# Useage:
+#     dev_run <command-file> <command-function> [command-options]
+#
+dev_run() {
+    # Execute the command
+    if [[ $# -le 0 || -z "$1" ]]; then
+        echo "dev: missing <command-file>" >&2
+        # dev_help_useage
+        # dev_help_files
+        # dev_help_options
+        return 1
+    elif [[ $# -eq 1 || -z "$2" ]]; then
+        echo "dev: missing <command-function>" >&2
+        # dev_help_useage "$1"
+        # dev_help_functions
+        # dev_help_options
+        return 1
+    elif [[ $# -ge 2 ]]; then
+        declare cmd=$1
+        declare func=${2/-/_}
+
+        if [[ "$(declare -F cmd_$func)" == "cmd_$func" ]]; then
+            if [[ $glb_run_level -eq 2 ]]; then
+                set -- "${@:3}"
+                dev_exec_local "cmd_$func" "$@"
+            elif [[ $glb_run_level -eq 1 ]]; then
+                :
+            else
+                # FIXME Verify command exists, checksum.
+                # dev_exec "dev_verify_callback" "dev" "-v" $@
+                dev_exec "dev_exec_callback" "dev" "-l" $@
+            fi
+        else
+            echo "dev: command not found: $func" >&2
+            return 1
+        fi
+    fi
+}
+
+#
+# Useage:
+#     dev_run_sys <system-command> [arguments]
+#
+dev_run_sys() {
+    declare cmd="$1"
+
+    if [[ $glb_run_level -eq 2 ]]; then
+        set -- "${@:2}"
+        dev_exec_local "$cmd" "$@"
+    elif [[ $glb_run_level -eq 1 ]]; then
+        :
+    else
+        # dev_exec "dev_verify_callback" "whereis" $cmd
+        dev_exec "dev_exec_callback" "dev" "-l" "-s" $@
+    fi
+}
+
+#
+# Useage:
+#     dev_exec_local <command> <arguments>...
+#
+dev_exec_local() {
+    echo ""
+    echo "Running..."
+    echo ""
+
+    declare cmd="$1"
+
+    set -- "${@:2}"
+
+    declare log_err
+    declare log_out
+
+    declare user="$(whoami)"
+    declare host="127.0.0.1"
+    declare title="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')] $cmd $@"
+
+    log_out="$glb_log/$host.out"
+    log_err="$glb_log/$host.err"
+
+    echo "$title"
+
+    echo "$title" >> $log_out
+    echo "$title" >> $log_err
+
+    set +o errexit
+    # declare log_out="$glb_log/$(whoami)-$cmd-$func"
+    # cmd_$func $@ 2>&1 | tee $log_out.out
+    # (cmd_$func $@ | tee $log_out.out) 3>&1 1>&2 2>&3 | tee $log_out.err
+    nohup $cmd $@ >>$log_out 2>>$log_err &
+    ret="$?"
+    set -o errexit
+
+    # echo "?: $ret"
+    echo "PID: $!"
+    # echo "out: $(< $log_out)"
+    # echo "err: $(< $log_err)"
+    echo ""
+}
+
+#
+# Execute a command from all nodes.
+# This method will check dev is exists.
+# Useage:
+#     dev_exec <callback-function> <system-command> [arguments]
+#     dev_exec <callback-function> dev [options] <command-file> <command-function> [command-options]
+#
+dev_exec() {
+    if [[ "${#cfg_nodes[@]}" -le 0 ]]; then
+        echo "dev: empty nodes" >&2
+        return 1
+    fi
+
+    echo ""
+    echo "Running..."
+    echo ""
+
+    declare callback="$1"
+    declare ret
+    declare out
+    declare err
+    declare log_err
+    declare log_out
+
+    declare user
+    declare host
+    declare title
+
+    set -- "${@:2}"
+
+    for node in "${!cfg_nodes[@]}"; do
+        user="${cfg_nodes[$node]}"
+        host="$node"
+        title="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')] $@"
+
+        log_out="$glb_log/$host.out"
+        log_err="$glb_log/$host.err"
+
+        echo "$title"
+
+        echo "$title" >> $log_out
+        echo "$title" >> $log_err
+
+        set +o errexit
+        # out=$(ssh -t -i $glb_private_key ${cfg_nodes[$host]}@$host "$@" 2>$err_log)
+        nohup ssh -i $glb_private_key $user@$host "$@" >>$log_out 2>>$log_err &
+        ret="$?"
+        set -o errexit
+
+        # echo "?: $ret"
+        echo "PID: $!"
+        # echo "out: $(< $log_out)"
+        # echo "err: $(< $log_err)"
+        echo ""
+    done
+}
+
+#
+# A function called main is required for scripts long enough to contain at
+# least one other function.The last non-comment line in the file should be
+# a call to main:
+#     main "$@"
+#
+main() {
+    dev_global
+
+    . $glb_wk_dir/lib/help
+
+    # When used in a function, declare and typeset make each name local
+    declare -ag functions # functions[] is an local indexed array
+    declare counter=0
+    declare opt
+    declare als
+    declare i
+    declare j
+
+    # Prepare options
+    for i in "$@"; do
+        opt=""
+        if [[ "${i:0:2}" == "--" ]]; then
+            set -- "${@:2}" # Removed the 1st parameter
+            opt="${i:2}"
+        elif [[ "${i:0:1}" == "-" ]]; then
+            set -- "${@:2}" # Removed the 1st parameter
+            for j in $(compgen -A function); do
+                als="als_${j:4}"
+                if [[ "${j:0:4}" == "ofn_" && "${!als}" == "${i:1}" ]]; then
+                    opt="${j:4}"; break
+                fi
+            done
+
+            if [[ -z "$opt" ]]; then
+                echo "dev: unrecognized option -${i:1}" >&2
+            fi
+        else
+            break;
+        fi
+
+        # Append option function to the array
+        if [[ -z "$opt" ]]; then
+            continue
+        elif [[ "$opt" == "system" ]]; then
+            # Execute 'ofn_system' before including the file to determine
+            # whether the system command
+            ofn_system
+        else
+            functions[$counter]="$opt"
+            let "counter += 1"
+        fi
+    done
+
+    # Prepare files
+    if [[ $glb_sys_cmd -eq 0 ]]; then
+        dev_load_files $@
+    fi
+
+    # Do option functions
+    for i in "${functions[@]}"; do
+        ofn_${i/-/_} $@
+    done
+
+    # Do command function
+    if [[ $glb_run -eq 1 ]]; then
+        if [[ $glb_sys_cmd -eq 1 ]]; then
+            dev_run_sys $@
+        else
+            if [[ $# -ge 1 && $glb_file_loaded -eq 0 ]]; then
+                echo "dev: command file not found: $glb_cmd_path.cmd" >&2
+                return 1
+            fi
+
+            dev_run $@
+        fi
+    fi
+}
+
+
+# Call to main function. custom function declare before here.
+dev_wk_dir "$0"
+main $@
