@@ -15,7 +15,7 @@
 #
 # cfg_xxx: Configurations, declared in config file.
 #
-# arg_xxx: Arguments for commands, declared in xxx.args files.
+# arg_xxx: Arguments for commands, declared in xxx.arg files.
 #                     For exmpale:
 #                         readonly demo_hello="Hello"
 #                         demo_world="world"
@@ -134,23 +134,28 @@ dev_global() {
 # Prepare command files
 #
 dev_load_files() {
+    # Include bootstrap
+    if [[ -f $cfg_base/lib/bootstrap ]]; then
+        . $cfg_base/lib/bootstrap
+    fi
+
     # Command file
     if [[ $# -ge 1 && ! -z "$1" ]]; then
         declare -g glb_cmd_path="$glb_cmd/$1"
-
-        if [[ "$1" == "dev" ]]; then
-            # Cannot set 'dev' as a command file
-            return 0
-        fi
 
         if [[ ! -f $glb_cmd_path.cmd ]]; then
             # File not found: $glb_cmd_path.cmd
             return 0
         fi
 
-        # Include arguments file
-        if [[ -f $glb_cmd_path.args ]]; then
-            . $glb_cmd_path.args
+        # Include arguments
+        if [[ -f $glb_cmd_path.arg ]]; then
+            . $glb_cmd_path.arg
+        fi
+
+        # Include variables
+        if [[ -f $glb_cmd_path.var ]]; then
+            . $glb_cmd_path.var
         fi
 
         # Include command file

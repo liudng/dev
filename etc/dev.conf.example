@@ -12,14 +12,17 @@
 # b75m, s1200, vbox, lxc etc
 # readonly cfg_model=""
 
+# Working directory
+# readonly cfg_base="$glb_wk_dir"
+
 # The directory stored command files
-# readonly cfg_cmd="$glb_wk_dir/lib"
+# readonly cfg_cmd="$cfg_base/lib"
 
 # The log directory
-# readonly cfg_log="$glb_wk_dir/log"
+# readonly cfg_log="$cfg_base/log"
 
 # The temp directory
-# readonly cfg_var="$glb_wk_dir/var"
+# readonly cfg_var="$cfg_base/var"
 
 # Private key path
 # readonly cfg_private_key="$HOME/.ssh/id_rsa"
