@@ -34,11 +34,11 @@ _dev_completion() {
     prev=${COMP_WORDS[COMP_CWORD-1]}
 
     if [[ "${cur:0:1}" == "-" ]]; then
-        opts="$(dev --options)"
+        opts="$(dev --options 2>/dev/null)"
     elif [[ $COMP_CWORD -eq 1 ]]; then
-        opts="$(dev --completion)"
+        opts="$(dev --completion 2>/dev/null)"
     else
-        opts="$(dev --completion $prev)"
+        opts="$(dev --completion $prev 2>/dev/null)"
     fi
 
     COMPREPLY=( $(compgen -W "$opts" -- $cur ) );

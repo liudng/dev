@@ -15,7 +15,7 @@
 #
 # cfg_xxx: Configurations, declared in config file.
 #
-# arg_xxx: Arguments for commands, declared in xxx.arg files.
+# arg_xxx: Arguments for commands, declared in xxx.args files.
 #                     For exmpale:
 #                         readonly demo_hello="Hello"
 #                         demo_world="world"
@@ -105,23 +105,32 @@ dev_global() {
     done
 
     # Command file directory: glb_cmd
-    dev_const "cmd" "$cfg_cmd" "$glb_wk_dir/cmd"
+    dev_const "cmd" "$cfg_base/cmd" "$glb_wk_dir/cmd"
+
+    # Command file directory: glb_etc
+    dev_const "etc" "$cfg_base/etc" "$glb_wk_dir/etc"
 
     # Log directory: glb_log
-    dev_sub_dir "log" "$cfg_log" "$glb_wk_dir/log"
+    dev_sub_dir "log" "$cfg_base/log" "$glb_wk_dir/log"
 
     # Var directory: glb_var
-    dev_sub_dir "var" "$cfg_var" "$glb_wk_dir/var"
+    dev_sub_dir "var" "$cfg_base/var" "$glb_wk_dir/var"
 
     # Private key: glb_private_key
     dev_const "private_key" "$cfg_private_key" "$HOME/.ssh/id_rsa"
+
+    # Is shift the next argument.
+    declare -g glb_shift=0
 
     # Is run command
     declare -g glb_run=1
 
     # Run level
-    # 0: All nodes, 1: Specifies nodes, 2: Local machine
+    # 0: Local machine, 1: Specifies nodes, 2: Specifies group 3: All nodes
     declare -g glb_run_level=0
+
+    # Runs in the background
+    declare -g glb_run_in_bg=0
 
     # Non-dev command
     declare -g glb_sys_cmd=0
@@ -149,8 +158,8 @@ dev_load_files() {
         fi
 
         # Include arguments
-        if [[ -f $glb_cmd_path.arg ]]; then
-            . $glb_cmd_path.arg
+        if [[ -f $glb_etc/dev.d/$1.args ]]; then
+            . $glb_etc/dev.d/$1.args
         fi
 
         # Include variables
@@ -188,15 +197,23 @@ dev_run() {
         declare func=${2/-/_}
 
         if [[ "$(declare -F cmd_$func)" == "cmd_$func" ]]; then
-            if [[ $glb_run_level -eq 2 ]]; then
+            if [[ $glb_run_level -eq 0 ]]; then
+                # Run in local machine
                 set -- "${@:3}"
                 dev_exec_local "cmd_$func" "$@"
             elif [[ $glb_run_level -eq 1 ]]; then
+                # FIXME Run in specifies nodes
                 :
-            else
+            elif [[ $glb_run_level -eq 2 ]]; then
+                # FIXME Run in specifies group
+                :
+            elif [[ $glb_run_level -eq 3 ]]; then
+                # Run in all nodes
                 # FIXME Verify command exists, checksum.
                 # dev_exec "dev_verify_callback" "dev" "-v" $@
                 dev_exec "dev_exec_callback" "dev" "-l" $@
+            else
+                echo "dev: run level error: $glb_run_level" >&2
             fi
         else
             echo "dev: command not found: $func" >&2
@@ -212,14 +229,23 @@ dev_run() {
 dev_run_sys() {
     declare cmd="$1"
 
-    if [[ $glb_run_level -eq 2 ]]; then
+    if [[ $glb_run_level -eq 0 ]]; then
+        # Run in local machine
         set -- "${@:2}"
         dev_exec_local "$cmd" "$@"
     elif [[ $glb_run_level -eq 1 ]]; then
+        # FIXME Run in specifies nodes
         :
-    else
+    elif [[ $glb_run_level -eq 2 ]]; then
+        # FIXME Run in specifies group
+        :
+    elif [[ $glb_run_level -eq 3 ]]; then
+        # Run in all nodes
+        # FIXME Verify command exists, checksum.
         # dev_exec "dev_verify_callback" "whereis" $cmd
         dev_exec "dev_exec_callback" "dev" "-l" "-s" $@
+    else
+        echo "dev: run level error: $glb_run_level" >&2
     fi
 }
 
@@ -228,42 +254,34 @@ dev_run_sys() {
 #     dev_exec_local <command> <arguments>...
 #
 dev_exec_local() {
-    echo ""
-    echo "Running..."
-    echo ""
-
     declare cmd="$1"
 
     set -- "${@:2}"
 
-    declare log_err
-    declare log_out
+    # $cmd $@ 2>&1 | tee $log_out
+    # ($cmd $@ | tee $log_out) 3>&1 1>&2 2>&3 | tee $log_err
+    if [[ $glb_run_in_bg -eq 1 ]]; then
+        declare log_err
+        declare log_out
 
-    declare user="$(whoami)"
-    declare host="127.0.0.1"
-    declare title="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')] $cmd $@"
+        declare user="$(whoami)"
+        declare host="127.0.0.1"
+        declare title="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')] $cmd $@"
 
-    log_out="$glb_log/$host.out"
-    log_err="$glb_log/$host.err"
+        log_out="$glb_log/$host.out"
+        log_err="$glb_log/$host.err"
 
-    echo "$title"
+        echo "$title" >> $log_out
+        echo "$title" >> $log_err
 
-    echo "$title" >> $log_out
-    echo "$title" >> $log_err
-
-    set +o errexit
-    # declare log_out="$glb_log/$(whoami)-$cmd-$func"
-    # cmd_$func $@ 2>&1 | tee $log_out.out
-    # (cmd_$func $@ | tee $log_out.out) 3>&1 1>&2 2>&3 | tee $log_out.err
-    nohup $cmd $@ >>$log_out 2>>$log_err &
-    ret="$?"
-    set -o errexit
-
-    # echo "?: $ret"
-    echo "PID: $!"
-    # echo "out: $(< $log_out)"
-    # echo "err: $(< $log_err)"
-    echo ""
+        nohup $cmd $@ >>$log_out 2>>$log_err &
+        echo "PID: $!"
+        # echo "out: $(< $log_out)"
+        # echo "err: $(< $log_err)"
+    else
+        $cmd $@
+        # echo "$?"
+    fi
 }
 
 #
@@ -278,10 +296,6 @@ dev_exec() {
         echo "dev: empty nodes" >&2
         return 1
     fi
-
-    echo ""
-    echo "Running..."
-    echo ""
 
     declare callback="$1"
     declare ret
@@ -301,24 +315,28 @@ dev_exec() {
         host="$node"
         title="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')] $@"
 
-        log_out="$glb_log/$host.out"
-        log_err="$glb_log/$host.err"
-
         echo "$title"
 
-        echo "$title" >> $log_out
-        echo "$title" >> $log_err
-
         set +o errexit
-        # out=$(ssh -t -i $glb_private_key ${cfg_nodes[$host]}@$host "$@" 2>$err_log)
-        nohup ssh -i $glb_private_key $user@$host "$@" >>$log_out 2>>$log_err &
-        ret="$?"
+        # out=$(ssh -t -i $glb_private_key $user@$host "$@" 2>$err_log)
+        if [[ $glb_run_in_bg -eq 1 ]]; then
+            log_out="$glb_log/$host.out"
+            log_err="$glb_log/$host.err"
+
+            echo "$title" >> $log_out
+            echo "$title" >> $log_err
+
+            nohup ssh -i $glb_private_key $user@$host "$@" >>$log_out 2>>$log_err &
+            echo "PID: $!"
+            # echo "out: $(< $log_out)"
+            # echo "err: $(< $log_err)"
+        else
+            # FIXME use coproc
+            ssh -i $glb_private_key $user@$host "$@"
+            # echo "$?"
+        fi
         set -o errexit
 
-        # echo "?: $ret"
-        echo "PID: $!"
-        # echo "out: $(< $log_out)"
-        # echo "err: $(< $log_err)"
         echo ""
     done
 }
@@ -330,8 +348,6 @@ dev_exec() {
 #     main "$@"
 #
 main() {
-    dev_global
-
     . $glb_wk_dir/lib/help
 
     # When used in a function, declare and typeset make each name local
@@ -341,37 +357,56 @@ main() {
     declare als
     declare i
     declare j
+    declare longopt
+    declare args
+    declare val
 
     # Prepare options
-    for i in "$@"; do
+    while true ; do
+        glb_shift=0
         opt=""
-        if [[ "${i:0:2}" == "--" ]]; then
-            set -- "${@:2}" # Removed the 1st parameter
-            opt="${i:2}"
-        elif [[ "${i:0:1}" == "-" ]]; then
-            set -- "${@:2}" # Removed the 1st parameter
+        longopt=0
+
+        if [[ "${1:0:2}" == "--" ]]; then
+            opt="${1:2}"
+            longopt=1
+        elif [[ "${1:0:1}" == "-" ]]; then
             for j in $(compgen -A function); do
                 als="als_${j:4}"
-                if [[ "${j:0:4}" == "ofn_" && "${!als}" == "${i:1}" ]]; then
+                if [[ "${j:0:4}" == "ofn_" && "${!als}" == "${1:1}" ]]; then
                     opt="${j:4}"; break
                 fi
             done
 
             if [[ -z "$opt" ]]; then
-                echo "dev: unrecognized option -${i:1}" >&2
+                echo "dev: unrecognized option -${1:1}" >&2
             fi
         else
-            break;
+            break
         fi
 
-        # Append option function to the array
-        if [[ -z "$opt" ]]; then
+        shift
+
+        if [[ -z $opt ]]; then
             continue
-        elif [[ "$opt" == "system" ]]; then
-            # Execute 'ofn_system' before including the file to determine
-            # whether the system command
-            ofn_system
+        fi
+
+        if [[ $longopt -eq 1 ]]; then
+            IFS='=' read -ra args <<< "$opt"
+            opt=${args[0]}
+            val=${args[1]}
         else
+            val=$1
+        fi
+
+        if [[ "$(declare -F opr_$opt)" == "opr_$opt" ]]; then
+            opr_$opt "$val"
+            if [[ $glb_shift -eq 1 && $longopt -eq 0 ]]; then
+                shift
+            fi
+        fi
+
+        if [[ "$(declare -F ofn_$opt)" == "ofn_$opt" ]]; then
             functions[$counter]="$opt"
             let "counter += 1"
         fi
@@ -405,4 +440,5 @@ main() {
 
 # Call to main function. custom function declare before here.
 dev_wk_dir "$0"
+dev_global
 main $@

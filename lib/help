@@ -79,10 +79,23 @@ dev_help_options() {
 }
 
 #
+# Recursively process subdirectories
+#
+dev_completion() {
+    for i in $(ls $1); do
+        if [[ -d $1/$i ]]; then
+            dev_completion $1/$i $i/
+        elif [[ "${i: -4}" == ".cmd" ]]; then
+            ret="$ret $2${i:0:-4}"
+        fi
+    done
+}
+
+#
 # List all options
 #
-opt_options="List all options"
-als_options=""
+readonly opt_options="List all options"
+readonly als_options=""
 ofn_options() {
     glb_run=0
 
@@ -111,8 +124,8 @@ ofn_options() {
 # Useage:
 #     dev --help
 #
-opt_help="Help topic and usage information"
-als_help="h"
+readonly opt_help="Help topic and usage information"
+readonly als_help="h"
 ofn_help() {
     glb_run=0
 
@@ -133,20 +146,20 @@ ofn_help() {
 #     dev --completion
 #     dev --completion <command-file>
 #
-opt_completion="List all command files or functions"
-als_completion=""
+readonly opt_completion="List all command files or functions"
+readonly als_completion=""
 ofn_completion() {
     glb_run=0
 
     declare ret
     declare i
 
+    if [[ "${1:0:1}" == "-" ]]; then
+        shift
+    fi
+
     if [[ $# -le 0 || -z "$1" ]]; then
-        for i in $(ls $glb_cmd); do
-            if [[ "${i: -4}" == ".cmd" ]]; then
-                ret="$ret ${i:0:-4}"
-            fi
-        done
+        dev_completion $glb_cmd
     else
         for i in $(compgen -A function); do
             if [[ "${i:0:4}" == "cmd_" ]]; then
@@ -163,8 +176,8 @@ ofn_completion() {
 #     dev -v <command-file> <command-function> <command-arguments>
 #     dev --verify <command-file> <command-function> <command-arguments>
 #
-opt_verify="Verify that all nodes are ready to run the command"
-als_verify="v"
+readonly opt_verify="Verify that all nodes are ready to run the command"
+readonly als_verify="v"
 ofn_verify() {
     glb_run=0
 
@@ -186,25 +199,30 @@ ofn_verify() {
 #
 # Run the command on the specified machines.
 # Useage:
-#     dev -b xxx,xxx <command-file> <command-function> <command-arguments>
-#     dev --batch=xxx,xxx <command-file> <command-function> <command-arguments>
+#     dev -n xxx,xxx <command-file> <command-function> <command-arguments>
+#     dev --nodes=xxx,xxx <command-file> <command-function> <command-arguments>
 #
-opt_batch="Run the command on the specified machines"
-als_batch="b"
-ofn_batch() {
+readonly opt_nodes="Run the command on the specified machines"
+readonly als_nodes="n"
+ofn_nodes() {
     glb_run_level=1
 }
 
 #
-# Only run on local machine.
+# Specifies run level
+# 0: Local machine, 1: Specifies nodes, 2: Specifies group 3: All nodes
 # Useage:
-#     dev -l <command-file> <command-function> <command-arguments>
-#     dev --local <command-file> <command-function> <command-arguments>
+#     dev -t <run-level> <command-file> <command-function> <command-arguments>
+#     dev --target=<run-level> <command-file> <command-function> <command-arguments>
 #
-opt_local="Run the command on the specified machines"
-als_local="l"
-ofn_local() {
-    glb_run_level=2
+readonly opt_target="Run the command on the specified machines"
+readonly als_target="t"
+opr_target() {
+    glb_shift=1
+    glb_run_level=$1
+}
+ofn_target() {
+    glb_run_level=$1
 }
 
 #
@@ -213,8 +231,23 @@ ofn_local() {
 #     dev -s <command-file> <command-function> <command-arguments>
 #     dev --system <command-file> <command-function> <command-arguments>
 #
-opt_system="Run a system(Non-dev) command"
-als_system="s"
-ofn_system() {
+readonly opt_system="Run a system(Non-dev) command"
+readonly als_system="s"
+opr_system() {
     glb_sys_cmd=1
+}
+ofn_system() {
+    :
+}
+
+#
+# Runs in the background.
+# Useage:
+#     dev -b <command-file> <command-function> <command-arguments>
+#     dev --background <command-file> <command-function> <command-arguments>
+#
+readonly opt_background="Runs in the background"
+readonly als_background="b"
+ofn_background() {
+    glb_run_in_bg=1
 }
