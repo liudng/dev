@@ -78,7 +78,7 @@ dev_help_files() {
     echo "These are the all aviliable <cmd-file>s:"; echo
 
     declare ret
-    dev_cmd_files $glb_base/cmd
+    dev_cmd_files $glb_wkdir/cmd
     echo ${ret:1} |tr " " "\n" |column -c $(tput cols) |fmt
 
     echo
@@ -92,7 +92,7 @@ dev_help_functions() {
 
     for i in $(compgen -A function); do
         if [[ "${i:0:4}" == "cmd_" ]]; then
-            echo -e "  ${i:4} \t in $glb_base/cmd/$glb_cmd_file:$i()"
+            echo -e "  ${i:4} \t in $glb_wkdir/cmd/$glb_cmd_file:$i()"
         fi
     done
 
@@ -132,8 +132,8 @@ dev_const() {
 #     dev_wkdir <dev-path>
 #
 dev_wkdir() {
-    declare wkdir="$1" && [ -L "$1" ] && wkdir=$(readlink -f "$1")
-    declare -gr glb_wkdir="$(dirname $(dirname $(realpath $wkdir)))"
+    declare base="$1" && [ -L "$base" ] && base=$(readlink -f "$base")
+    declare -gr glb_base="$(dirname $(dirname $(realpath $base)))"
 }
 
 #
@@ -170,19 +170,19 @@ dev_dnf() {
 dev_conf() {
     declare cfg
     # Include configuration files
-    for cfg in "/etc/dev.conf", "$HOME/.dev.conf", "$glb_wkdir/etc/dev.conf"; do
+    for cfg in "/etc/dev.conf", "$HOME/.dev.conf", "$glb_base/etc/dev.conf"; do
         [ -f $cfg ] && . $cfg && break
     done
 
     # Support multiple projects.
     if [ $# -ge 1 ] && [ ! -z ${cfg_projects[$1]} ] && [ -d ${cfg_projects[$1]} ]; then
         declare -gr glb_project="$1"
-        declare -gr glb_base=${cfg_projects[$1]}
+        declare -gr glb_wkdir=${cfg_projects[$1]}
         cfg=${cfg_projects[$1]}/etc/dev.conf && [ -f $cfg ] && . $cfg
         return 0
     else
         declare -gr glb_project="dev"
-        declare -gr glb_base=$glb_wkdir
+        declare -gr glb_wkdir=$glb_base
         return 1
     fi
 }
@@ -231,16 +231,16 @@ dev_load_files() {
     if [[ $# -ge 1 && ! -z "$1" ]]; then
         glb_cmd_file="$1"
 
-        [ ! -f $glb_base/cmd/$glb_cmd_file.cmd ] && return 0
+        [ ! -f $glb_wkdir/cmd/$glb_cmd_file.cmd ] && return 0
 
         # Include arguments
-        [ -f $glb_base/etc/dev.d/$1.conf ] && . $glb_base/etc/dev.d/$1.conf
+        [ -f $glb_wkdir/etc/dev.d/$1.conf ] && . $glb_wkdir/etc/dev.d/$1.conf
 
         # Include variables
-        [ -f $glb_base/cmd/$glb_cmd_file.var ] && . $glb_base/cmd/$glb_cmd_file.var
+        [ -f $glb_wkdir/cmd/$glb_cmd_file.var ] && . $glb_wkdir/cmd/$glb_cmd_file.var
 
         # Include command file
-        . $glb_base/cmd/$glb_cmd_file.cmd
+        . $glb_wkdir/cmd/$glb_cmd_file.cmd
     fi
 }
 
@@ -359,8 +359,8 @@ dev_exec() {
     declare user="$1"; shift
     declare desc="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')]"
 
-    log_out="$glb_base/var/log/$host.out"
-    log_err="$glb_base/var/log/$host.err"
+    log_out="$glb_wkdir/var/log/$host.out"
+    log_err="$glb_wkdir/var/log/$host.err"
 
     echo "$desc" >> $log_out
     echo "$desc" >> $log_err
@@ -394,8 +394,8 @@ dev_exec() {
 #     main "$@"
 #
 main() {
-    . $glb_wkdir/lib/options
-    . $glb_base/lib/bootstrap
+    . $glb_base/lib/options
+    . $glb_wkdir/lib/bootstrap
 
     declare opt
     declare arg
@@ -441,7 +441,7 @@ main() {
     [ $glb_run -ne 1 ] && return 0
 
     if [[ $# -ge 1 && -z $glb_cmd_file ]]; then
-        echo "dev: command file not found: $glb_base/cmd/$glb_cmd_file.cmd" >&2
+        echo "dev: command file not found: $glb_wkdir/cmd/$glb_cmd_file.cmd" >&2
         return 1
     fi
 

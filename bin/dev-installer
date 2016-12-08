@@ -1,14 +1,13 @@
 #!/bin/sh
 #
 # Useage:
-#     dev-installer <tar-path> <base-path> <sudoer>
+#     dev-installer <base-path> <sudoer>
 #
 
-[ $# -lt 3 ] && echo "Useage: dev-installer <tar-path> <base-path> <sudoer>" >&2 && exit 1
+[ $# -lt 2 ] && echo "Useage: dev-installer <base-path> <sudoer>" >&2 && exit 1
 
-declare init_tar=$1
-declare base=$2
-declare sudoer=$3
+declare base=$1
+declare sudoer=$2
 declare home="/root"
 
 if [ "$sudoer" != "root" ]; then
@@ -45,8 +44,8 @@ chmod -R a+w $base/var/log $base/var/tmp
 
 # private and public key
 mkdir -m 700 -p $home/.ssh
-cp $base/var/misc/id_rsa* $home/.ssh
-cat $base/var/misc/id_rsa.pub >> $home/.ssh/authorized_keys
+cp $base/var/init/id_rsa* $home/.ssh
+cat $base/var/init/id_rsa.pub >> $home/.ssh/authorized_keys
 chown -R $sudoer:$sudoer $home/.ssh
 chmod 600 $home/.ssh/authorized_keys $home/.ssh/id_rsa*
-rm -f $base/var/misc/id_rsa*
+rm -f $base/var/init/id_rsa*
