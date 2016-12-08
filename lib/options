@@ -88,46 +88,34 @@ opa_als[deploy]="deploy"
 opa_fun_deploy() {
     glb_run=0
 
-    declare user home
-    declare cudir="$(pwd)"
+    declare cmd user host sudoer init_tar=$glb_wkdir/dev-init.tar
 
-    declare host
-    declare init_tar=$glb_wkdir/dev-init.tar
-    declare sudoer
-    declare id_rsa=$glb_wkdir/var/init/id_rsa
-
-    cp $glb_private_key $id_rsa
-    cp $glb_public_key $id_rsa.pub
+    cmd="mkdir -m 700 -p \$HOME/.ssh &&"
+    cmd="$cmd cat > \$HOME/.ssh/authorized_keys &&"
+    cmd="$cmd chmod 600 \$HOME/.ssh/authorized_keys"
 
     [ -f $init_tar ] && rm -f $init_tar
 
-    # --exclude='./etc/dev.conf' \
-    # --exclude='.git' \
     cd $glb_wkdir
     tar --exclude='./dev-init.tar' \
         --exclude='./*.sublime-*' \
         --exclude='./var/log' \
         --exclude='./var/tmp' \
         -cf $init_tar .
-    cd $cudir
 
     for host in "${!cfg_nodes[@]}"; do
         sudoer="${cfg_nodes[$host]}"
         [ -z $1 ] && user="$sudoer" || user="$1"
-        [ "$user" = "root" ] && home="/root" || home="/home/$user"
 
         # public key, remotely write to a file using SSH
         # It's will overwrite authorized_keys
-        cat $glb_public_key | dev_ssh $user@$host "cat > $home/.ssh/authorized_keys"
-
-        # scp
-        dev_scp $init_tar $glb_base/bin/dev-installer $user@$host:$home
-
-        # init
-        dev_ssh $user@$host "$home/dev-installer $glb_wkdir $sudoer"
+        cat $glb_public_key | dev_ssh $user@$host "$cmd"
+        dev_scp $glb_private_key $glb_public_key $user@$host:\$HOME/.ssh
+        dev_scp $init_tar $glb_base/bin/dev-installer $user@$host:\$HOME
+        dev_ssh $user@$host "\$HOME/dev-installer $glb_wkdir $sudoer"
     done
 
-    rm -f $init_tar $id_rsa $id_rsa.pub
+    rm -f $init_tar
 }
 
 #

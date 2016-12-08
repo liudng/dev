@@ -1,4 +1,8 @@
 #!/bin/sh
+# Copyright 2016 The dev Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
 #
 # Useage:
 #     dev-installer <base-path> <sudoer>
@@ -6,46 +10,33 @@
 
 [ $# -lt 2 ] && echo "Useage: dev-installer <base-path> <sudoer>" >&2 && exit 1
 
-declare base=$1
-declare sudoer=$2
-declare home="/root"
+declare base=$1 sudoer=$2 home="/root"
 
 if [ "$sudoer" != "root" ]; then
     home="/home/$sudoer"
 
-    set +o errexit
-    getent passwd $sudoer
-    declare sudoer_exists=$?
-    set -o errexit
-
-    if [ $sudoer_exists -ne 0 ]; then
-        # create new user
+    if ! getent passwd $sudoer; then
+        # Create sudoer
         useradd --create-home $sudoer
-        # password
         echo "$sudoer:dev" | chpasswd
-        # add user to wheel
         usermod -G wheel $sudoer
     fi
 
-    # nopassword
+    # No-password
     mkdir -p /etc/sudoers.d
     echo "$sudoer ALL=NOPASSWD: ALL" > /etc/sudoers.d/$sudoer-nopasswd
+
+    # Private and public key
+    mkdir -m 700 -p $home/.ssh
+    cp $HOME/.ssh/id_rsa* $home/.ssh
+    cat $HOME/.ssh/id_rsa.pub > $home/.ssh/authorized_keys
+    chown -R $sudoer:$sudoer $home/.ssh
+    chmod 600 $home/.ssh/authorized_keys $home/.ssh/id_rsa*
 fi
 
-mkdir -p $base
-tar -xf $HOME/dev-init.tar -C $base
+# Install
+mkdir -p $base && tar -xf $HOME/dev-init.tar -C $base
+mkdir -m a+w -p $base/var/log $base/var/tmp
+touch $base/var/log/127.0.0.1.err $base/var/log/127.0.0.1.out
 chown -R $sudoer:$sudoer $base
 rm -f $HOME/dev-init.tar $HOME/dev-installer
-
-mkdir -p $base/var/log $base/var/tmp
-touch $base/var/log/127.0.0.1.err $base/var/log/127.0.0.1.out
-chown -R $sudoer:$sudoer $base/var/log $base/var/tmp
-chmod -R a+w $base/var/log $base/var/tmp
-
-# private and public key
-mkdir -m 700 -p $home/.ssh
-cp $base/var/init/id_rsa* $home/.ssh
-cat $base/var/init/id_rsa.pub >> $home/.ssh/authorized_keys
-chown -R $sudoer:$sudoer $home/.ssh
-chmod 600 $home/.ssh/authorized_keys $home/.ssh/id_rsa*
-rm -f $base/var/init/id_rsa*

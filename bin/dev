@@ -15,10 +15,7 @@
 # opa_xxx:     Optional global variables.
 #
 # cfg_xxx: Configurations, declared in config file(readonly).
-#
-# hlp_xxx: Command help text, declared in xxx.cmd files by user(readonly).
 # cmd_xxx: Command function, declared in xxx.cmd files by user.
-#
 # xxx: Local varialbes, declared in xxx.cmd files by user. Declare
 #      function-specific variables with local. Declaration and assignment
 #      should be on different lines. for example:
@@ -56,12 +53,9 @@ dev_help_useage() {
 # List all options
 #
 dev_help_options() {
-    declare opt
-    declare sht # short name
-    declare als
-
     echo "Optional arguments:"; echo
 
+    declare opt sht als
     for als in "${!opa_als[@]}"; do
         opt="${opa_als[$als]}"
         [ "$opt" != "$als" ] && sht="-$als, " || sht=""
@@ -118,13 +112,8 @@ dev_cmd_files() {
 #     dev_const <name> <config-value> <default-value>
 #
 dev_const() {
-    declare the_name="glb_$1"
-
-    if [[ -z "$2" ]]; then
-        declare -gr "$the_name=$3"
-    else
-        declare -gr "$the_name=$2"
-    fi
+    declare varname="glb_$1"
+    [ -z "$2" ] && declare -gr "$varname=$3" || declare -gr "$varname=$2"
 }
 
 #
@@ -141,7 +130,8 @@ dev_wkdir() {
 #     dev_scp <user-host> <command>
 #
 dev_scp() {
-    scp -i $glb_private_key -o StrictHostKeyChecking=no $@
+    declare cmd="scp -i $glb_private_key -o StrictHostKeyChecking=no $@"
+    echo "$cmd" && $cmd
 }
 
 #
@@ -149,7 +139,8 @@ dev_scp() {
 #     dev_ssh <user-host> <command>
 #
 dev_ssh() {
-    ssh -i $glb_private_key -o StrictHostKeyChecking=no $@
+    declare cmd="ssh -i $glb_private_key -o StrictHostKeyChecking=no $@"
+    echo "$cmd" && $cmd
 }
 
 #
@@ -160,7 +151,8 @@ dev_dnf() {
     # -4     Resolve to IPv4 addresses only.
     # --allowerasing
     #        Allow  erasing  of  installed  packages  to  resolve dependencies.
-    dnf -y --allowerasing -4 $@
+    declare cmd="dnf -y --allowerasing -4 $@"
+    echo "$cmd" && $cmd
 }
 
 #
@@ -175,7 +167,7 @@ dev_conf() {
     done
 
     # Support multiple projects.
-    if [ $# -ge 1 ] && [ ! -z ${cfg_projects[$1]} ] && [ -d ${cfg_projects[$1]} ]; then
+    if [ $# -ge 1 ] && [ ! -z $cfg_projects ] && [ -d ${cfg_projects[$1]} ]; then
         declare -gr glb_project="$1"
         declare -gr glb_wkdir=${cfg_projects[$1]}
         cfg=${cfg_projects[$1]}/etc/dev.conf && [ -f $cfg ] && . $cfg
@@ -227,21 +219,17 @@ dev_global() {
 #     dev_load_files <cmd-file>
 #
 dev_load_files() {
-    # Command file
-    if [[ $# -ge 1 && ! -z "$1" ]]; then
-        glb_cmd_file="$1"
+    [[ $# -lt 1 || ! -z "$1" ]] && return 0 || glb_cmd_file="$1"
+    [ ! -f $glb_wkdir/cmd/$1.cmd ] && return 0
 
-        [ ! -f $glb_wkdir/cmd/$glb_cmd_file.cmd ] && return 0
+    # Include arguments
+    [ -f $glb_wkdir/etc/dev.d/$1.conf ] && . $glb_wkdir/etc/dev.d/$1.conf
 
-        # Include arguments
-        [ -f $glb_wkdir/etc/dev.d/$1.conf ] && . $glb_wkdir/etc/dev.d/$1.conf
+    # Include variables
+    [ -f $glb_wkdir/cmd/$1.var ] && . $glb_wkdir/cmd/$1.var
 
-        # Include variables
-        [ -f $glb_wkdir/cmd/$glb_cmd_file.var ] && . $glb_wkdir/cmd/$glb_cmd_file.var
-
-        # Include command file
-        . $glb_wkdir/cmd/$glb_cmd_file.cmd
-    fi
+    # Include command file
+    . $glb_wkdir/cmd/$1.cmd
 }
 
 #
@@ -267,8 +255,7 @@ dev_run() {
         return 1
     fi
 
-    declare cmd=""
-    declare fun=${2/-/_}
+    declare cmd="" fun=${2/-/_}
 
     [ "${fun:0:4}" == "cmd_" ] || fun="cmd_$fun"
     if [[ "$(declare -F $fun)" != "$fun" ]]; then
@@ -288,7 +275,6 @@ dev_run() {
     elif [[ $glb_run_level -eq 3 ]]; then
         # Run in all nodes
         cmd="dev_exec_remote $glb_base/bin/dev"
-        # [ $glb_run_daemon -eq 1 ] && cmd="$cmd --daemon"
         $cmd $@
     else
         echo "dev: run level error: $glb_run_level" >&2
@@ -298,9 +284,7 @@ dev_run() {
 
 #
 # Execute a command from all nodes.
-# This method will check dev is exists.
 # Useage:
-#     dev_exec_remote <system-command> [arguments]
 #     dev_exec_remote dev [options] <cmd-file> <cmd-function> [cmd-arguments]
 #
 dev_exec_remote() {
@@ -309,9 +293,7 @@ dev_exec_remote() {
         return 1
     fi
 
-    declare host
-    declare user
-    declare cmd
+    declare cmd user host
 
     for host in "${!cfg_nodes[@]}"; do
         user="${cfg_nodes[$host]}"
@@ -351,10 +333,7 @@ dev_exec_local() {
 #     dev_exec <host> <user> <command> <arguments>...
 #
 dev_exec() {
-    declare cmd
-    declare log_err
-    declare log_out
-
+    declare cmd log_err log_out
     declare host="$1"; shift
     declare user="$1"; shift
     declare desc="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')]"
@@ -370,7 +349,6 @@ dev_exec() {
     # $@ 2>&1 | tee $log_out
     # ($@ | tee $log_out) 3>&1 1>&2 2>&3 | tee $log_err
     if [[ $glb_run_daemon -eq 1 ]]; then
-        # FIXME use coproc
         cmd="nohup $@ >>$log_out 2>>$log_err &"
         echo "$cmd" && echo "$cmd" >> $log_out && echo "$cmd" >>$log_err
         $cmd
@@ -390,21 +368,16 @@ dev_exec() {
 #
 # A function called main is required for scripts long enough to contain at
 # least one other function.The last non-comment line in the file should be
-# a call to main:
-#     main "$@"
+# a call to main: dev_main "$@"
 #
-main() {
+dev_main() {
     . $glb_base/lib/options
     . $glb_wkdir/lib/bootstrap
 
-    declare opt
-    declare arg
-    declare val
+    declare opt arg
 
     # Prepare optional arguments
     while true ; do
-        val=""
-
         if [[ "$1" == "--" ]]; then
             shift; break
         elif [[ "${1:0:2}" == "--" ]]; then
@@ -420,13 +393,10 @@ main() {
 
         if [[ "$(expr index $opt '=')" -ge 1 ]]; then
             IFS='=' read -ra arg <<< "$opt"
-            opt=${arg[0]}
-            val=${arg[1]}
+            opa_fun[${arg[0]}]="${arg[1]}"
         elif [[ ! -z "$1" && "${1:0:1}" != "-" ]]; then
-            val=$1; shift
+            opa_fun[$opt]="$1"; shift
         fi
-
-        opa_fun[$opt]="$val"
     done
 
     # Prepare files
@@ -452,4 +422,4 @@ main() {
 # Call to main function. custom function declare before here.
 dev_wkdir $0
 dev_conf $@ && shift
-dev_global && main $@
+dev_global && dev_main $@
