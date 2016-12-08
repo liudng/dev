@@ -18,13 +18,13 @@
 # By convention, the function name starts with an underscore.
 # .bash_completion
 # source ./lib/completion
-# complete -F _dev_completion dev
+# complete -F _dev_init_completion dev
 
 
 #
 # dev completion
 #
-_dev_completion() {
+_dev_init_completion() {
     # Pointer to current completion word.
     # By convention, it's named "cur" but this isn't strictly necessary.
     local cur prev opts
@@ -44,4 +44,4 @@ _dev_completion() {
     COMPREPLY=( $(compgen -W "$opts" -- $cur ) );
 }
 
-complete -F _dev_completion dev
+complete -F _dev_init_completion dev

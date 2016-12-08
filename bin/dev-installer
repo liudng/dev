@@ -1,0 +1,52 @@
+#!/bin/sh
+#
+# Useage:
+#     dev-installer <tar-path> <base-path> <sudoer>
+#
+
+[ $# -lt 3 ] && echo "Useage: dev-installer <tar-path> <base-path> <sudoer>" >&2 && exit 1
+
+declare init_tar=$1
+declare base=$2
+declare sudoer=$3
+declare home="/root"
+
+if [ "$sudoer" != "root" ]; then
+    home="/home/$sudoer"
+
+    set +o errexit
+    getent passwd $sudoer
+    declare sudoer_exists=$?
+    set -o errexit
+
+    if [ $sudoer_exists -ne 0 ]; then
+        # create new user
+        useradd --create-home $sudoer
+        # password
+        echo "$sudoer:dev" | chpasswd
+        # add user to wheel
+        usermod -G wheel $sudoer
+    fi
+
+    # nopassword
+    mkdir -p /etc/sudoers.d
+    echo "$sudoer ALL=NOPASSWD: ALL" > /etc/sudoers.d/$sudoer-nopasswd
+fi
+
+mkdir -p $base
+tar -xf $HOME/dev-init.tar -C $base
+chown -R $sudoer:$sudoer $base
+rm -f $HOME/dev-init.tar $HOME/dev-installer
+
+mkdir -p $base/var/log $base/var/tmp
+touch $base/var/log/127.0.0.1.err $base/var/log/127.0.0.1.out
+chown -R $sudoer:$sudoer $base/var/log $base/var/tmp
+chmod -R a+w $base/var/log $base/var/tmp
+
+# private and public key
+mkdir -m 700 -p $home/.ssh
+cp $base/var/misc/id_rsa* $home/.ssh
+cat $base/var/misc/id_rsa.pub >> $home/.ssh/authorized_keys
+chown -R $sudoer:$sudoer $home/.ssh
+chmod 600 $home/.ssh/authorized_keys $home/.ssh/id_rsa*
+rm -f $base/var/misc/id_rsa*

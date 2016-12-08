@@ -6,21 +6,17 @@
 #
 # Shell Style Guide: https://google.github.io/styleguide/shell.xml
 #
-# dev_xxx: Framwork functions, declared in dev.
-# glb_xxx: Global variables, declared in dev.
+# dev_xxx: Framwork functions, declared in bin/dev.
+# glb_xxx: Global variables, declared in bin/dev.
 #
-# ofn_xxx: Option functions.
-# opt_xxx: Option description variables.
-# als_xxx: Alias of options.
+# opa_rem: Optional arguments description variables(readonly).
+# opa_als: Alias of optional arguments(readonly).
+# opa_fun_xxx: Optional arguments function.
+# opa_xxx:     Optional global variables.
 #
-# cfg_xxx: Configurations, declared in config file.
+# cfg_xxx: Configurations, declared in config file(readonly).
 #
-# arg_xxx: Arguments for commands, declared in xxx.args files.
-#                     For exmpale:
-#                         readonly demo_hello="Hello"
-#                         demo_world="world"
-#
-# hlp_xxx: Command help text, declared in xxx.cmd files by user.
+# hlp_xxx: Command help text, declared in xxx.cmd files by user(readonly).
 # cmd_xxx: Command function, declared in xxx.cmd files by user.
 #
 # xxx: Local varialbes, declared in xxx.cmd files by user. Declare
@@ -32,11 +28,89 @@
 #          declare file="/path/to/file/name"
 #
 
+# trap 'echo "# $BASH_COMMAND"' DEBUG
+
+# Prints shell input lines as they are read
+# set -o verbose
+
+# Print command traces before executing command
+# set -o xtrace
+
 # trace ERR through pipes
 set -o pipefail
 
 # set -e : exit the script if any statement returns a non-true return value
 set -o errexit
+
+#
+# Useage information.
+#
+dev_help_useage() {
+    declare files="<cmd-file>"
+    [ ! -z "$1" ] && files="$1"
+
+    echo "Usage: dev [options] $files <cmd-function> [cmd-arguments]"; echo
+}
+
+#
+# List all options
+#
+dev_help_options() {
+    declare opt
+    declare sht # short name
+    declare als
+
+    echo "Optional arguments:"; echo
+
+    for als in "${!opa_als[@]}"; do
+        opt="${opa_als[$als]}"
+        [ "$opt" != "$als" ] && sht="-$als, " || sht=""
+        echo -e "  $sht--${opt//_/-} \t ${opa_rem[$opt]}"
+    done
+
+    echo
+}
+
+#
+# List all command files.
+#
+dev_help_files() {
+    echo "These are the all aviliable <cmd-file>s:"; echo
+
+    declare ret
+    dev_cmd_files $glb_base/cmd
+    echo ${ret:1} |tr " " "\n" |column -c $(tput cols) |fmt
+
+    echo
+}
+
+#
+# List all functions of included <cmd-file>s.
+#
+dev_help_functions() {
+    echo "These are the all aviliable <cmd-function>s:"; echo
+
+    for i in $(compgen -A function); do
+        if [[ "${i:0:4}" == "cmd_" ]]; then
+            echo -e "  ${i:4} \t in $glb_base/cmd/$glb_cmd_file:$i()"
+        fi
+    done
+
+    echo
+}
+
+#
+# Recursively process subdirectories
+#
+dev_cmd_files() {
+    for i in $(ls $1); do
+        if [[ -d $1/$i ]]; then
+            dev_cmd_files $1/$i $i/
+        elif [[ "${i: -4}" == ".cmd" ]]; then
+            ret="$ret $2${i:0:-4}"
+        fi
+    done
+}
 
 #
 # Init a global constaiont
@@ -54,185 +128,157 @@ dev_const() {
 }
 
 #
-# Init subdirectory.
 # Useage:
-#     dev_sub_dir <directory-name> <config-value> <default-value>
+#     dev_wkdir <dev-path>
 #
-dev_sub_dir() {
-    dev_const "$1" "$2" "$3"
-
-    declare the_name="glb_$1"
-    declare the_path="${!the_name}"
-
-    # Create directory
-    if [[ ! -d $the_path ]]; then
-        mkdir -p $the_path
-    fi
+dev_wkdir() {
+    declare wkdir="$1" && [ -L "$1" ] && wkdir=$(readlink -f "$1")
+    declare -gr glb_wkdir="$(dirname $(dirname $(realpath $wkdir)))"
 }
 
 #
 # Useage:
-#     dev_wk_dir <dev-path>
+#     dev_scp <user-host> <command>
 #
-dev_wk_dir() {
-    declare wk_dir="$1"
+dev_scp() {
+    scp -i $glb_private_key -o StrictHostKeyChecking=no $@
+}
 
-    if [[ -L "$1" ]]; then
-        wk_dir=$(readlink -f "$1")
+#
+# Useage:
+#     dev_ssh <user-host> <command>
+#
+dev_ssh() {
+    ssh -i $glb_private_key -o StrictHostKeyChecking=no $@
+}
+
+#
+# Useage:
+#     dev_dnf
+#
+dev_dnf() {
+    # -4     Resolve to IPv4 addresses only.
+    # --allowerasing
+    #        Allow  erasing  of  installed  packages  to  resolve dependencies.
+    dnf -y --allowerasing -4 $@
+}
+
+#
+# Useage:
+#     dev_conf $@
+#
+dev_conf() {
+    declare cfg
+    # Include configuration files
+    for cfg in "/etc/dev.conf", "$HOME/.dev.conf", "$glb_wkdir/etc/dev.conf"; do
+        [ -f $cfg ] && . $cfg && break
+    done
+
+    # Support multiple projects.
+    if [ $# -ge 1 ] && [ ! -z ${cfg_projects[$1]} ] && [ -d ${cfg_projects[$1]} ]; then
+        declare -gr glb_project="$1"
+        declare -gr glb_base=${cfg_projects[$1]}
+        cfg=${cfg_projects[$1]}/etc/dev.conf && [ -f $cfg ] && . $cfg
+        return 0
+    else
+        declare -gr glb_project="dev"
+        declare -gr glb_base=$glb_wkdir
+        return 1
     fi
-
-    declare -gr glb_wk_dir="$(dirname $(dirname $(realpath $wk_dir)))"
-    # echo "Working directory: $glb_wk_dir" >&2
 }
 
 #
 # Global variables
+# Useage:
+#     dev_global <base-dir>
 #
 dev_global() {
     # The sudo prefix
-    if [[ "$(whoami)" != "root" ]]; then
-        declare -gr glb_sudo=""
-    else
-        declare -gr glb_sudo="sudo"
-    fi
-
-    # Include configuration file
-    for cfgfile in "/etc/dev.conf", "$HOME/.dev.conf", "$glb_wk_dir/etc/dev.conf"; do
-        if [[ -f $cfgfile ]]; then
-            . $cfgfile
-            break # FIXME support multiple config file.
-        fi
-    done
-
-    # Command file directory: glb_cmd
-    dev_const "cmd" "$cfg_base/cmd" "$glb_wk_dir/cmd"
-
-    # Command file directory: glb_etc
-    dev_const "etc" "$cfg_base/etc" "$glb_wk_dir/etc"
-
-    # Log directory: glb_log
-    dev_sub_dir "log" "$cfg_base/log" "$glb_wk_dir/log"
-
-    # Var directory: glb_var
-    dev_sub_dir "var" "$cfg_base/var" "$glb_wk_dir/var"
+    [ "$(whoami)" != "root" ] && declare -gr glb_sudo="sudo" || declare -gr glb_sudo=""
 
     # Private key: glb_private_key
     dev_const "private_key" "$cfg_private_key" "$HOME/.ssh/id_rsa"
 
-    # Is shift the next argument.
-    declare -g glb_shift=0
+    # Private key: glb_public_key
+    dev_const "public_key" "$cfg_public_key" "$HOME/.ssh/id_rsa.pub"
+
+    # For option arguments
+    declare -Ag opa_rem opa_als opa_fun
 
     # Is run command
     declare -g glb_run=1
 
-    # Run level
     # 0: Local machine, 1: Specifies nodes, 2: Specifies group 3: All nodes
     declare -g glb_run_level=0
 
     # Runs in the background
-    declare -g glb_run_in_bg=0
+    declare -g glb_run_daemon=0
 
-    # Non-dev command
-    declare -g glb_sys_cmd=0
+    # Run as root
+    declare -g glb_run_sudo=0
 
-    # Command file load status
-    declare -g glb_file_loaded=0
+    # Command file
+    declare -g glb_cmd_file
 }
 
 #
 # Prepare command files
+# Useage:
+#     dev_load_files <cmd-file>
 #
 dev_load_files() {
-    # Include bootstrap
-    if [[ -f $cfg_base/lib/bootstrap ]]; then
-        . $cfg_base/lib/bootstrap
-    fi
-
     # Command file
     if [[ $# -ge 1 && ! -z "$1" ]]; then
-        declare -g glb_cmd_path="$glb_cmd/$1"
+        glb_cmd_file="$1"
 
-        if [[ ! -f $glb_cmd_path.cmd ]]; then
-            # File not found: $glb_cmd_path.cmd
-            return 0
-        fi
+        [ ! -f $glb_base/cmd/$glb_cmd_file.cmd ] && return 0
 
         # Include arguments
-        if [[ -f $glb_etc/dev.d/$1.args ]]; then
-            . $glb_etc/dev.d/$1.args
-        fi
+        [ -f $glb_base/etc/dev.d/$1.conf ] && . $glb_base/etc/dev.d/$1.conf
 
         # Include variables
-        if [[ -f $glb_cmd_path.var ]]; then
-            . $glb_cmd_path.var
-        fi
+        [ -f $glb_base/cmd/$glb_cmd_file.var ] && . $glb_base/cmd/$glb_cmd_file.var
 
         # Include command file
-        . $glb_cmd_path.cmd
-        glb_file_loaded=1
+        . $glb_base/cmd/$glb_cmd_file.cmd
     fi
 }
 
 #
 # Execute the command
 # Useage:
-#     dev_run <command-file> <command-function> [command-options]
+#     dev_run_std <cmd-file> <cmd-function> [cmd-arguments]
 #
 dev_run() {
     # Execute the command
     if [[ $# -le 0 || -z "$1" ]]; then
-        echo "dev: missing <command-file>" >&2
-        # dev_help_useage
-        # dev_help_files
-        # dev_help_options
+        echo "dev-err: missing <cmd-file>" >&2
+        echo "" >&2
+        dev_help_useage >&2
+        dev_help_options >&2
+        dev_help_files >&2
         return 1
     elif [[ $# -eq 1 || -z "$2" ]]; then
-        echo "dev: missing <command-function>" >&2
-        # dev_help_useage "$1"
-        # dev_help_functions
+        echo "dev-err: missing <cmd-function>" >&2
+        echo "" >&2
+        dev_help_useage "$1" >&2
         # dev_help_options
+        dev_help_functions >&2
         return 1
-    elif [[ $# -ge 2 ]]; then
-        declare cmd=$1
-        declare func=${2/-/_}
-
-        if [[ "$(declare -F cmd_$func)" == "cmd_$func" ]]; then
-            if [[ $glb_run_level -eq 0 ]]; then
-                # Run in local machine
-                set -- "${@:3}"
-                dev_exec_local "cmd_$func" "$@"
-            elif [[ $glb_run_level -eq 1 ]]; then
-                # FIXME Run in specifies nodes
-                :
-            elif [[ $glb_run_level -eq 2 ]]; then
-                # FIXME Run in specifies group
-                :
-            elif [[ $glb_run_level -eq 3 ]]; then
-                # Run in all nodes
-                # FIXME Verify command exists, checksum.
-                # dev_exec "dev_verify_callback" "dev" "-v" $@
-                dev_exec "dev_exec_callback" "dev" "-l" $@
-            else
-                echo "dev: run level error: $glb_run_level" >&2
-            fi
-        else
-            echo "dev: command not found: $func" >&2
-            return 1
-        fi
     fi
-}
 
-#
-# Useage:
-#     dev_run_sys <system-command> [arguments]
-#
-dev_run_sys() {
-    declare cmd="$1"
+    declare cmd=""
+    declare fun=${2/-/_}
+
+    [ "${fun:0:4}" == "cmd_" ] || fun="cmd_$fun"
+    if [[ "$(declare -F $fun)" != "$fun" ]]; then
+        echo "dev: command not found: $fun" >&2
+        return 1
+    fi
 
     if [[ $glb_run_level -eq 0 ]]; then
         # Run in local machine
-        set -- "${@:2}"
-        dev_exec_local "$cmd" "$@"
+        set -- "${@:3}" && dev_exec_local $fun $@
     elif [[ $glb_run_level -eq 1 ]]; then
         # FIXME Run in specifies nodes
         :
@@ -241,46 +287,12 @@ dev_run_sys() {
         :
     elif [[ $glb_run_level -eq 3 ]]; then
         # Run in all nodes
-        # FIXME Verify command exists, checksum.
-        # dev_exec "dev_verify_callback" "whereis" $cmd
-        dev_exec "dev_exec_callback" "dev" "-l" "-s" $@
+        cmd="dev_exec_remote $glb_base/bin/dev"
+        # [ $glb_run_daemon -eq 1 ] && cmd="$cmd --daemon"
+        $cmd $@
     else
         echo "dev: run level error: $glb_run_level" >&2
-    fi
-}
-
-#
-# Useage:
-#     dev_exec_local <command> <arguments>...
-#
-dev_exec_local() {
-    declare cmd="$1"
-
-    set -- "${@:2}"
-
-    # $cmd $@ 2>&1 | tee $log_out
-    # ($cmd $@ | tee $log_out) 3>&1 1>&2 2>&3 | tee $log_err
-    if [[ $glb_run_in_bg -eq 1 ]]; then
-        declare log_err
-        declare log_out
-
-        declare user="$(whoami)"
-        declare host="127.0.0.1"
-        declare title="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')] $cmd $@"
-
-        log_out="$glb_log/$host.out"
-        log_err="$glb_log/$host.err"
-
-        echo "$title" >> $log_out
-        echo "$title" >> $log_err
-
-        nohup $cmd $@ >>$log_out 2>>$log_err &
-        echo "PID: $!"
-        # echo "out: $(< $log_out)"
-        # echo "err: $(< $log_err)"
-    else
-        $cmd $@
-        # echo "$?"
+        return 1
     fi
 }
 
@@ -288,57 +300,91 @@ dev_exec_local() {
 # Execute a command from all nodes.
 # This method will check dev is exists.
 # Useage:
-#     dev_exec <callback-function> <system-command> [arguments]
-#     dev_exec <callback-function> dev [options] <command-file> <command-function> [command-options]
+#     dev_exec_remote <system-command> [arguments]
+#     dev_exec_remote dev [options] <cmd-file> <cmd-function> [cmd-arguments]
 #
-dev_exec() {
+dev_exec_remote() {
     if [[ "${#cfg_nodes[@]}" -le 0 ]]; then
         echo "dev: empty nodes" >&2
         return 1
     fi
 
-    declare callback="$1"
-    declare ret
-    declare out
-    declare err
+    declare host
+    declare user
+    declare cmd
+
+    for host in "${!cfg_nodes[@]}"; do
+        user="${cfg_nodes[$host]}"
+        cmd="dev_ssh $user@$host"
+        [ $glb_run_sudo -eq 1 ] && cmd="$cmd sudo"
+
+        set +o errexit
+        dev_exec $host $user $cmd $@
+        set -o errexit
+
+        echo
+    done
+}
+
+#
+# Useage:
+#     dev_exec_local <command> <arguments>...
+#
+dev_exec_local() {
+    declare host="127.0.0.1"
+    declare user="$(whoami)"
+
+    if [[ $glb_run_sudo -eq 1 ]]; then
+        unset opa_fun[sudo]
+        declare cmd="sudo $glb_base/bin/dev"
+        for opt in "${!opa_fun[@]}"; do
+            cmd="$cmd --$opt ${opa_fun[$opt]}"
+        done
+        dev_exec $host $user $cmd -- $glb_cmd_file $@
+    else
+        dev_exec $host $user $@
+    fi
+}
+
+#
+# Useage:
+#     dev_exec <host> <user> <command> <arguments>...
+#
+dev_exec() {
+    declare cmd
     declare log_err
     declare log_out
 
-    declare user
-    declare host
-    declare title
+    declare host="$1"; shift
+    declare user="$1"; shift
+    declare desc="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')]"
 
-    set -- "${@:2}"
+    log_out="$glb_base/var/log/$host.out"
+    log_err="$glb_base/var/log/$host.err"
 
-    for node in "${!cfg_nodes[@]}"; do
-        user="${cfg_nodes[$node]}"
-        host="$node"
-        title="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')] $@"
+    echo "$desc" >> $log_out
+    echo "$desc" >> $log_err
 
-        echo "$title"
+    chmod a+wx $log_out $log_err
 
-        set +o errexit
-        # out=$(ssh -t -i $glb_private_key $user@$host "$@" 2>$err_log)
-        if [[ $glb_run_in_bg -eq 1 ]]; then
-            log_out="$glb_log/$host.out"
-            log_err="$glb_log/$host.err"
+    # $@ 2>&1 | tee $log_out
+    # ($@ | tee $log_out) 3>&1 1>&2 2>&3 | tee $log_err
+    if [[ $glb_run_daemon -eq 1 ]]; then
+        # FIXME use coproc
+        cmd="nohup $@ >>$log_out 2>>$log_err &"
+        echo "$cmd" && echo "$cmd" >> $log_out && echo "$cmd" >>$log_err
+        $cmd
 
-            echo "$title" >> $log_out
-            echo "$title" >> $log_err
+        echo "PID: $!"
+        # echo "out: $(< $log_out)"
+        # echo "err: $(< $log_err)"
+    else
+        cmd="$@"
+        echo "$cmd" && echo "$cmd" >> $log_out && echo "$cmd" >>$log_err
+        $cmd
 
-            nohup ssh -i $glb_private_key $user@$host "$@" >>$log_out 2>>$log_err &
-            echo "PID: $!"
-            # echo "out: $(< $log_out)"
-            # echo "err: $(< $log_err)"
-        else
-            # FIXME use coproc
-            ssh -i $glb_private_key $user@$host "$@"
-            # echo "$?"
-        fi
-        set -o errexit
-
-        echo ""
-    done
+        # echo "$?"
+    fi
 }
 
 #
@@ -348,97 +394,62 @@ dev_exec() {
 #     main "$@"
 #
 main() {
-    . $glb_wk_dir/lib/help
+    . $glb_wkdir/lib/options
+    . $glb_base/lib/bootstrap
 
-    # When used in a function, declare and typeset make each name local
-    declare -ag functions # functions[] is an local indexed array
-    declare counter=0
     declare opt
-    declare als
-    declare i
-    declare j
-    declare longopt
-    declare args
+    declare arg
     declare val
 
-    # Prepare options
+    # Prepare optional arguments
     while true ; do
-        glb_shift=0
-        opt=""
-        longopt=0
+        val=""
 
-        if [[ "${1:0:2}" == "--" ]]; then
-            opt="${1:2}"
-            longopt=1
+        if [[ "$1" == "--" ]]; then
+            shift; break
+        elif [[ "${1:0:2}" == "--" ]]; then
+            opt="${1:2}"; shift
         elif [[ "${1:0:1}" == "-" ]]; then
-            for j in $(compgen -A function); do
-                als="als_${j:4}"
-                if [[ "${j:0:4}" == "ofn_" && "${!als}" == "${1:1}" ]]; then
-                    opt="${j:4}"; break
-                fi
-            done
-
-            if [[ -z "$opt" ]]; then
-                echo "dev: unrecognized option -${1:1}" >&2
-            fi
+            opt="${opa_als[${1:1}]}"; shift
+            [ -z "$opt" ] && echo "dev: unrecognized option -${1:1}" >&2
         else
             break
         fi
 
-        shift
+        [ -z $opt ] && continue
 
-        if [[ -z $opt ]]; then
-            continue
+        if [[ "$(expr index $opt '=')" -ge 1 ]]; then
+            IFS='=' read -ra arg <<< "$opt"
+            opt=${arg[0]}
+            val=${arg[1]}
+        elif [[ ! -z "$1" && "${1:0:1}" != "-" ]]; then
+            val=$1; shift
         fi
 
-        if [[ $longopt -eq 1 ]]; then
-            IFS='=' read -ra args <<< "$opt"
-            opt=${args[0]}
-            val=${args[1]}
-        else
-            val=$1
-        fi
-
-        if [[ "$(declare -F opr_$opt)" == "opr_$opt" ]]; then
-            opr_$opt "$val"
-            if [[ $glb_shift -eq 1 && $longopt -eq 0 ]]; then
-                shift
-            fi
-        fi
-
-        if [[ "$(declare -F ofn_$opt)" == "ofn_$opt" ]]; then
-            functions[$counter]="$opt"
-            let "counter += 1"
-        fi
+        opa_fun[$opt]="$val"
     done
 
     # Prepare files
-    if [[ $glb_sys_cmd -eq 0 ]]; then
-        dev_load_files $@
-    fi
+    dev_load_files $@
 
-    # Do option functions
-    for i in "${functions[@]}"; do
-        ofn_${i/-/_} $@
+    # Do optional functions
+    for opt in "${!opa_fun[@]}"; do
+        opa_fun_${opt/-/_} "${opa_fun[$opt]}"
     done
 
     # Do command function
-    if [[ $glb_run -eq 1 ]]; then
-        if [[ $glb_sys_cmd -eq 1 ]]; then
-            dev_run_sys $@
-        else
-            if [[ $# -ge 1 && $glb_file_loaded -eq 0 ]]; then
-                echo "dev: command file not found: $glb_cmd_path.cmd" >&2
-                return 1
-            fi
+    [ $glb_run -ne 1 ] && return 0
 
-            dev_run $@
-        fi
+    if [[ $# -ge 1 && -z $glb_cmd_file ]]; then
+        echo "dev: command file not found: $glb_base/cmd/$glb_cmd_file.cmd" >&2
+        return 1
     fi
+
+    btp_main $@
+    dev_run $@
 }
 
-
 # Call to main function. custom function declare before here.
-dev_wk_dir "$0"
-dev_global
-main $@
+dev_wkdir $0
+dev_conf $@ && shift
+dev_global && main $@

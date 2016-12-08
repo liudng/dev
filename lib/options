@@ -1,0 +1,175 @@
+#!/bin/sh
+# Copyright 2016 The dev Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+#
+# Useage:
+#     dev --help
+#
+opa_rem[help]="Help topic and usage information"
+opa_als[h]="help"
+opa_fun_help() {
+    glb_run=0
+
+    if [[ $# -le 0 || -z "$1" ]]; then
+        dev_help_useage
+        dev_help_options
+        dev_help_files
+    else
+        dev_help_useage "$1"
+        dev_help_options
+        dev_help_functions
+    fi
+}
+
+#
+# Useage:
+#     dev --projects
+#
+opa_rem[projects]="List all projects"
+opa_als[projects]="projects"
+opa_fun_projects() {
+    :
+}
+
+#
+# Useage:
+#     dev --options
+#
+opa_rem[options]="List all optional arguments"
+opa_als[options]="options"
+opa_fun_options() {
+    glb_run=0
+
+    declare opt
+    declare als
+    declare ret
+
+    for als in "${!opa_als[@]}"; do
+        opt="${opa_als[$als]}"
+        ret="$ret --${opt//_/-}" && [ "$opt" != "$als" ] && ret="$ret -$als"
+    done
+
+    echo "${ret:1}"
+}
+
+#
+# Useage:
+#     dev --completion
+#     dev --completion <cmd-file>
+#
+opa_rem[completion]="List all command files or functions"
+opa_als[completion]="completion"
+opa_fun_completion() {
+    glb_run=0
+
+    declare ret
+    declare key
+
+    if [[ $# -le 0 || -z "$1" ]]; then
+        dev_cmd_files $glb_base/cmd
+    else
+        dev_load_files $1
+        for key in $(compgen -A function); do
+            [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
+        done
+    fi
+
+    echo "${ret:1}"
+}
+
+#
+# Useage:
+#     dev --deploy [user]
+#
+opa_rem[deploy]="Remote deployment"
+opa_als[deploy]="deploy"
+opa_fun_deploy() {
+    glb_run=0
+
+    declare user home
+    declare cudir="$(pwd)"
+
+    declare host
+    declare init_tar=$glb_base/dev-init.tar
+    declare sudoer
+    declare id_rsa=$glb_base/var/misc/id_rsa
+
+    cp $glb_private_key $id_rsa
+    cp $glb_public_key $id_rsa.pub
+
+    [ -f $init_tar ] && rm -f $init_tar
+
+    # --exclude='./etc/dev.conf' \
+    # --exclude='.git' \
+    cd $glb_base
+    tar --exclude='./dev-init.tar' \
+        --exclude='./*.sublime-*' \
+        --exclude='./var/log' \
+        --exclude='./var/tmp' \
+        -cf $init_tar .
+    cd $cudir
+
+    for host in "${!cfg_nodes[@]}"; do
+        sudoer="${cfg_nodes[$host]}"
+        [ -z $1 ] && user="$sudoer" || user="$1"
+        [ "$user" = "root" ] && home="/root" || home="/home/$user"
+
+        # public key, remotely write to a file using SSH
+        # It's will overwrite authorized_keys
+        cat $glb_public_key | dev_ssh $user@$host "cat > $home/.ssh/authorized_keys"
+
+        # scp
+        dev_scp $init_tar $glb_base/bin/dev-installer $user@$host:$home
+
+        # init
+        dev_ssh $user@$host "$home/dev-installer $home/dev-init.tar $glb_base $sudoer"
+    done
+
+    rm -f $init_tar $id_rsa $id_rsa.pub
+}
+
+#
+# Useage:
+#     dev -a
+#     dev --all
+#
+opa_rem[all]="Runs on all nodes"
+opa_als[a]="all"
+opa_fun_all() {
+    # 0: Local machine, 1: Specifies nodes, 2: Specifies group 3: All nodes
+    glb_run_level=3
+}
+
+#
+# Useage:
+#     dev -d
+#     dev --daemon
+#
+opa_rem[daemon]="Runs in the background"
+opa_als[d]="daemon"
+opa_fun_daemon() {
+    glb_run_daemon=1
+}
+
+#
+# Useage:
+#     dev -u [user]
+#     dev --sudo [user]
+#
+opa_rem[sudo]="Runs as root"
+opa_als[u]="sudo"
+opa_fun_sudo() {
+    glb_run_sudo=1
+}
+
+#
+# Useage:
+#     dev --xtrace
+#
+opa_rem[xtrace]="Print command traces before executing command"
+opa_als[xtrace]="xtrace"
+opa_fun_xtrace() {
+    set -o xtrace
+}
