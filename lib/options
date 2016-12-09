@@ -27,7 +27,7 @@ opa_fun_help() {
 # Useage:
 #     dev --projects
 #
-opa_rem[projects]="List all projects"
+opa_rem[projects]="List all of the available projects"
 opa_als[projects]="projects"
 opa_fun_projects() {
     :
@@ -132,7 +132,7 @@ opa_fun_init() {
     mkdir -p \
         $glb_wkdir/bin \
         $glb_wkdir/cmd \
-        $glb_wkdir/etc/dev.d \
+        $glb_wkdir/etc/cmd \
         $glb_wkdir/lib \
         $glb_wkdir/var/log \
         $glb_wkdir/var/misc \
@@ -183,4 +183,9 @@ opa_rem[xtrace]="Print command traces before executing command"
 opa_als[xtrace]="xtrace"
 opa_fun_xtrace() {
     set -o xtrace
+
+    # trap 'echo "# $BASH_COMMAND"' DEBUG
+
+    # Prints shell input lines as they are read
+    # set -o verbose
 }

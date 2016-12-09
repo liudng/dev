@@ -3,41 +3,14 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-#
-# Shell Style Guide: https://google.github.io/styleguide/shell.xml
-#
-# dev_xxx: Framwork functions, declared in bin/dev.
-# glb_xxx: Global variables, declared in bin/dev.
-#
-# opa_rem: Optional arguments description variables(readonly).
-# opa_als: Alias of optional arguments(readonly).
-# opa_fun_xxx: Optional arguments function.
-# opa_xxx:     Optional global variables.
-#
-# cfg_xxx: Configurations, declared in config file(readonly).
-# cmd_xxx: Command function, declared in xxx.cmd files by user.
-# xxx: Local varialbes, declared in xxx.cmd files by user. Declare
-#      function-specific variables with local. Declaration and assignment
-#      should be on different lines. for example:
-#          local file
-#          file="/path/to/file/name"
-#      or (only in function)
-#          declare file="/path/to/file/name"
-#
-
-# trap 'echo "# $BASH_COMMAND"' DEBUG
-
-# Prints shell input lines as they are read
-# set -o verbose
-
-# Print command traces before executing command
-# set -o xtrace
-
 # trace ERR through pipes
 set -o pipefail
 
 # set -e : exit the script if any statement returns a non-true return value
 set -o errexit
+
+# For option arguments
+declare -Ag opa_rem opa_als opa_fun
 
 #
 # Useage information.
@@ -190,9 +163,6 @@ dev_global() {
     # Private key: glb_ssh_key
     dev_const "ssh_key" "$HOME/.ssh/$cfg_ssh_key" "$HOME/.ssh/id_rsa"
 
-    # For option arguments
-    declare -Ag opa_rem opa_als opa_fun
-
     # 0: Local machine, 1: Specifies nodes, 2: Specifies group 3: All nodes
     declare -g glb_run=1 glb_run_level=0 glb_run_sudo=0 glb_run_daemon=0
 
@@ -206,11 +176,11 @@ dev_global() {
 #     dev_load_files <cmd-file>
 #
 dev_load_files() {
-    [[ $# -lt 1 || ! -z "$1" ]] && return 0 || glb_cmd_file="$1"
+    [[ $# -lt 1 || -z "$1" ]] && return 0 || glb_cmd_file="$1"
     [ ! -f $glb_wkdir/cmd/$1.cmd ] && return 0
 
     # Include arguments
-    [ -f $glb_wkdir/etc/dev.d/$1.conf ] && . $glb_wkdir/etc/dev.d/$1.conf
+    [ -f $glb_wkdir/etc/cmd/$1.conf ] && . $glb_wkdir/etc/cmd/$1.conf
 
     # Include variables
     [ -f $glb_wkdir/cmd/$1.var ] && . $glb_wkdir/cmd/$1.var
@@ -404,7 +374,7 @@ dev_main() {
         return 1
     fi
 
-    [ $(declare -F btp_main) = "btp_main" ] && btp_main $@
+    [ "$(declare -F btp_main)" == "btp_main" ] && btp_main $@
     dev_run $@
 }
 
