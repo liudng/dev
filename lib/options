@@ -117,13 +117,22 @@ opa_fun_deploy() {
 
     rm -f $init_tar
 }
+#
+# Useage:
+#     dev --init
+#
+opa_rem[init]="Create a new project directory structure"
+opa_als[init]="init"
+opa_fun_init() {
+    [ -z "$glb_prj" ] || [ "$glb_prj" = "dev" ] && echo "Useage: dev <prj> --init" >&2 && return 1
+}
 
 #
 # Useage:
 #     dev -a
 #     dev --all
 #
-opa_rem[all]="Runs on all nodes"
+opa_rem[all]="Runs on all of the available nodes"
 opa_als[a]="all"
 opa_fun_all() {
     # 0: Local machine, 1: Specifies nodes, 2: Specifies group 3: All nodes
@@ -132,11 +141,10 @@ opa_fun_all() {
 
 #
 # Useage:
-#     dev -d
 #     dev --daemon
 #
-opa_rem[daemon]="Runs in the background"
-opa_als[d]="daemon"
+opa_rem[daemon]="Run a command immune to hangups, with output to a non-tty"
+opa_als[daemon]="daemon"
 opa_fun_daemon() {
     glb_run_daemon=1
 }
@@ -146,7 +154,7 @@ opa_fun_daemon() {
 #     dev -u [user]
 #     dev --sudo [user]
 #
-opa_rem[sudo]="Runs as root"
+opa_rem[sudo]="Execute a command as another user"
 opa_als[u]="sudo"
 opa_fun_sudo() {
     glb_run_sudo=1

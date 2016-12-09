@@ -168,12 +168,12 @@ dev_conf() {
 
     # Support multiple projects.
     if [ $# -ge 1 ] && [ ! -z $cfg_projects ] && [ -d ${cfg_projects[$1]} ]; then
-        declare -gr glb_project="$1"
+        declare -gr glb_prj="$1"
         declare -gr glb_wkdir=${cfg_projects[$1]}
         cfg=${cfg_projects[$1]}/etc/dev.conf && [ -f $cfg ] && . $cfg
         return 0
     else
-        declare -gr glb_project="dev"
+        declare -gr glb_prj="dev"
         declare -gr glb_wkdir=$glb_base
         return 1
     fi
