@@ -5,12 +5,12 @@
 
 #
 # Useage:
-#     dev-installer <base-path> <sudoer>
+#     dev-installer <wkdir> <sudoer>
 #
 
-[ $# -lt 2 ] && echo "Useage: dev-installer <base-path> <sudoer>" >&2 && exit 1
+[ $# -lt 2 ] && echo "Useage: dev-installer <wkdir> <sudoer>" >&2 && exit 1
 
-declare base=$1 sudoer=$2 home="/root"
+declare wkdir=$1 sudoer=$2 home="/root"
 
 if [ "$sudoer" != "root" ]; then
     home="/home/$sudoer"
@@ -35,8 +35,8 @@ if [ "$sudoer" != "root" ]; then
 fi
 
 # Install
-mkdir -p $base && tar -xf $HOME/dev-init.tar -C $base
-mkdir -m a+w -p $base/var/log $base/var/tmp
-touch $base/var/log/127.0.0.1.err $base/var/log/127.0.0.1.out
-chown -R $sudoer:$sudoer $base
+mkdir -p $wkdir && tar -xf $HOME/dev-init.tar -C $wkdir
+mkdir -m a+w -p $wkdir/var/log $wkdir/var/tmp
+touch $wkdir/var/log/127.0.0.1.err $wkdir/var/log/127.0.0.1.out
+chown -R $sudoer:$sudoer $wkdir
 rm -f $HOME/dev-init.tar $HOME/dev-installer

@@ -130,7 +130,7 @@ dev_wkdir() {
 #     dev_scp <user-host> <command>
 #
 dev_scp() {
-    declare cmd="scp -i $glb_private_key -o StrictHostKeyChecking=no $@"
+    declare cmd="scp -i $glb_ssh_key -o StrictHostKeyChecking=no $@"
     echo "$cmd" && $cmd
 }
 
@@ -139,7 +139,7 @@ dev_scp() {
 #     dev_ssh <user-host> <command>
 #
 dev_ssh() {
-    declare cmd="ssh -i $glb_private_key -o StrictHostKeyChecking=no $@"
+    declare cmd="ssh -i $glb_ssh_key -o StrictHostKeyChecking=no $@"
     echo "$cmd" && $cmd
 }
 
@@ -160,17 +160,16 @@ dev_dnf() {
 #     dev_conf $@
 #
 dev_conf() {
-    declare cfg
     # Include configuration files
-    for cfg in "/etc/dev.conf", "$HOME/.dev.conf", "$glb_base/etc/dev.conf"; do
+    declare cfg
+    for cfg in "$HOME/.dev.conf", "$glb_base/etc/dev.conf"; do
         [ -f $cfg ] && . $cfg && break
     done
 
     # Support multiple projects.
-    if [ $# -ge 1 ] && [ ! -z $cfg_projects ] && [ -d ${cfg_projects[$1]} ]; then
+    if [ $# -ge 1 ] && [ -n "${cfg_projects[$1]+1}" ]; then
         declare -gr glb_prj="$1"
         declare -gr glb_wkdir=${cfg_projects[$1]}
-        cfg=${cfg_projects[$1]}/etc/dev.conf && [ -f $cfg ] && . $cfg
         return 0
     else
         declare -gr glb_prj="dev"
@@ -188,26 +187,14 @@ dev_global() {
     # The sudo prefix
     [ "$(whoami)" != "root" ] && declare -gr glb_sudo="sudo" || declare -gr glb_sudo=""
 
-    # Private key: glb_private_key
-    dev_const "private_key" "$cfg_private_key" "$HOME/.ssh/id_rsa"
-
-    # Private key: glb_public_key
-    dev_const "public_key" "$cfg_public_key" "$HOME/.ssh/id_rsa.pub"
+    # Private key: glb_ssh_key
+    dev_const "ssh_key" "$HOME/.ssh/$cfg_ssh_key" "$HOME/.ssh/id_rsa"
 
     # For option arguments
     declare -Ag opa_rem opa_als opa_fun
 
-    # Is run command
-    declare -g glb_run=1
-
     # 0: Local machine, 1: Specifies nodes, 2: Specifies group 3: All nodes
-    declare -g glb_run_level=0
-
-    # Runs in the background
-    declare -g glb_run_daemon=0
-
-    # Run as root
-    declare -g glb_run_sudo=0
+    declare -g glb_run=1 glb_run_level=0 glb_run_sudo=0 glb_run_daemon=0
 
     # Command file
     declare -g glb_cmd_file
@@ -372,7 +359,7 @@ dev_exec() {
 #
 dev_main() {
     . $glb_base/lib/options
-    . $glb_wkdir/lib/bootstrap
+    [ -f $glb_wkdir/lib/bootstrap ] && . $glb_wkdir/lib/bootstrap
 
     declare opt arg
 
@@ -396,6 +383,8 @@ dev_main() {
             opa_fun[${arg[0]}]="${arg[1]}"
         elif [[ ! -z "$1" && "${1:0:1}" != "-" ]]; then
             opa_fun[$opt]="$1"; shift
+        else
+            opa_fun[$opt]=""
         fi
     done
 
@@ -415,7 +404,7 @@ dev_main() {
         return 1
     fi
 
-    btp_main $@
+    [ $(declare -F btp_main) = "btp_main" ] && btp_main $@
     dev_run $@
 }
 

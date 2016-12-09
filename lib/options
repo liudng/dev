@@ -109,8 +109,8 @@ opa_fun_deploy() {
 
         # public key, remotely write to a file using SSH
         # It's will overwrite authorized_keys
-        cat $glb_public_key | dev_ssh $user@$host "$cmd"
-        dev_scp $glb_private_key $glb_public_key $user@$host:\$HOME/.ssh
+        cat $glb_ssh_key.pub | dev_ssh $user@$host "$cmd"
+        dev_scp $glb_ssh_key $glb_ssh_key.pub $user@$host:\$HOME/.ssh
         dev_scp $init_tar $glb_base/bin/dev-installer $user@$host:\$HOME
         dev_ssh $user@$host "\$HOME/dev-installer $glb_wkdir $sudoer"
     done
@@ -119,12 +119,27 @@ opa_fun_deploy() {
 }
 #
 # Useage:
-#     dev --init
+#     dev <prj> --init
 #
 opa_rem[init]="Create a new project directory structure"
 opa_als[init]="init"
 opa_fun_init() {
+    glb_run=0
+
     [ -z "$glb_prj" ] || [ "$glb_prj" = "dev" ] && echo "Useage: dev <prj> --init" >&2 && return 1
+    [ -d $glb_wkdir/bin ] || [ -d $glb_wkdir/cmd ] && echo "Project $glb_prj exists" >&2 && return 1
+
+    mkdir -p \
+        $glb_wkdir/bin \
+        $glb_wkdir/cmd \
+        $glb_wkdir/etc/dev.d \
+        $glb_wkdir/lib \
+        $glb_wkdir/var/log \
+        $glb_wkdir/var/misc \
+        $glb_wkdir/var/pkg \
+        $glb_wkdir/var/tmp
+
+    [ -f $glb_wkdir/lib/bootstrap ] || touch $glb_wkdir/lib/bootstrap
 }
 
 #

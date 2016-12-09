@@ -6,21 +6,18 @@
 
 # Use readonly or declare -r to ensure they're read only.
 
+# Nodes
+# declare -Agr cfg_nodes=(
+#     [192.168.122.101]=ld
+# )
+
 # Projects
-# declare -Ag cfg_projects=(
+# declare -Agr cfg_projects=(
 #     [sys]=/path/to/sys-project
 # )
 
-# Public key path
-# readonly cfg_public_key="$HOME/.ssh/id_rsa.pub"
-
 # Private key path
-# readonly cfg_private_key="$HOME/.ssh/id_rsa"
+# readonly cfg_ssh_key="id_rsa"
 
 # [protocol://][user:password@]proxyhost[:port]
 # readonly cfg_proxy=""
-
-# Nodes
-# declare -Ag cfg_nodes=(
-#     [192.168.122.101]=ld
-# )
