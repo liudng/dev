@@ -1,2 +1,6 @@
-etc/dev.conf
 *.sublime-*
+etc/dev.conf
+var/log/*.err
+var/log/*.log
+var/log/*.out
+var/tmp/*

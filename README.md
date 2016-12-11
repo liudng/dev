@@ -16,6 +16,26 @@ dev --deploy root
 ```
 
 ```sh
+/
+    bin
+    cmd
+    dst
+        bin
+        etc > ../etc
+        lib
+        sbin
+        share
+        var > ../var
+    etc
+    lib
+    src
+        ...
+    var
+        log
+        tmp
+```
+
+```sh
 #
 # Shell Style Guide: https://google.github.io/styleguide/shell.xml
 #
@@ -37,5 +57,7 @@ dev --deploy root
 #      or (only in function)
 #          declare file="/path/to/file/name"
 #
+# $@ 2>&1 | tee $log_out
+# ($@ | tee $log_out) 3>&1 1>&2 2>&3 | tee $log_err
 
 ```

@@ -10,17 +10,7 @@
 opa_rem[help]="Help topic and usage information"
 opa_als[h]="help"
 opa_fun_help() {
-    glb_run=0
-
-    if [[ $# -le 0 || -z "$1" ]]; then
-        dev_help_useage
-        dev_help_options
-        dev_help_files
-    else
-        dev_help_useage "$1"
-        dev_help_options
-        dev_help_functions
-    fi
+    dev_help_useage; dev_help_options; dev_help_files; return 0
 }
 
 #
@@ -30,7 +20,8 @@ opa_fun_help() {
 opa_rem[projects]="List all of the available projects"
 opa_als[projects]="projects"
 opa_fun_projects() {
-    :
+    return 0
+    # FIXME
 }
 
 #
@@ -40,55 +31,48 @@ opa_fun_projects() {
 opa_rem[options]="List all optional arguments"
 opa_als[options]="options"
 opa_fun_options() {
-    glb_run=0
-
-    declare opt
-    declare als
-    declare ret
+    declare opt als ret
 
     for als in "${!opa_als[@]}"; do
         opt="${opa_als[$als]}"
         ret="$ret --${opt//_/-}" && [ "$opt" != "$als" ] && ret="$ret -$als"
     done
 
-    echo "${ret:1}"
+    echo "${ret:1}"; return 0
 }
 
 #
 # Useage:
 #     dev --completion
-#     dev --completion <cmd-file>
+#     dev --completion <prj> <cmd-file>
 #
-opa_rem[completion]="List all command files or functions"
+opa_rem[completion]="List all project, command files or function files"
 opa_als[completion]="completion"
 opa_fun_completion() {
-    glb_run=0
-
-    declare ret
-    declare key
+    declare ret key
 
     if [[ $# -le 0 || -z "$1" ]]; then
         dev_cmd_files $glb_wkdir/cmd
     else
-        dev_load_files $1
+        dev_files $1
         for key in $(compgen -A function); do
             [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
         done
     fi
 
-    echo "${ret:1}"
+    echo "${ret:1}"; return 1
 }
 
 #
 # Useage:
-#     dev --deploy [user]
+#     dev --deploy <prj:user>
 #
 opa_rem[deploy]="Remote deployment"
 opa_als[deploy]="deploy"
 opa_fun_deploy() {
-    glb_run=0
+    [ -z "$1" ] && echo "Useage: dev --deploy <prj:user>" >&2 && return 1
 
-    declare cmd user host sudoer init_tar=$glb_wkdir/dev-init.tar
+    declare cmd user host sudoer init_tar=/tmp/dev-init.tar
 
     cmd="mkdir -m 700 -p \$HOME/.ssh &&"
     cmd="$cmd cat > \$HOME/.ssh/authorized_keys &&"
@@ -115,31 +99,33 @@ opa_fun_deploy() {
         dev_ssh $user@$host "\$HOME/dev-installer $glb_wkdir $sudoer"
     done
 
-    rm -f $init_tar
+    rm -f $init_tar; return 1
 }
+
 #
 # Useage:
-#     dev <prj> --init
+#     dev --init <prj>
 #
 opa_rem[init]="Create a new project directory structure"
 opa_als[init]="init"
 opa_fun_init() {
-    glb_run=0
+    [ -z "$1" ] || [ "$1" = "dev" ] && echo "Useage: dev --init <prj>" >&2 && return 1
 
-    [ -z "$glb_prj" ] || [ "$glb_prj" = "dev" ] && echo "Useage: dev <prj> --init" >&2 && return 1
-    [ -d $glb_wkdir/bin ] || [ -d $glb_wkdir/cmd ] && echo "Project $glb_prj exists" >&2 && return 1
+    declare prj="$1" wkdir="${cfg_projects[$1]}";
+    [ -z "$wkdir" ] && echo "Project config path error" >&2 && return 1
+    [ -d $wkdir/bin ] || [ -d $wkdir/cmd ] && echo "Project $prj exists" >&2 && return 1
 
     mkdir -p \
-        $glb_wkdir/bin \
-        $glb_wkdir/cmd \
-        $glb_wkdir/etc/cmd \
-        $glb_wkdir/lib \
-        $glb_wkdir/var/log \
-        $glb_wkdir/var/misc \
-        $glb_wkdir/var/pkg \
-        $glb_wkdir/var/tmp
+        $wkdir/bin \
+        $wkdir/cmd \
+        $wkdir/etc/cmd \
+        $wkdir/lib \
+        $wkdir/var/log \
+        $wkdir/var/misc \
+        $wkdir/var/pkg \
+        $wkdir/var/tmp
 
-    [ -f $glb_wkdir/lib/bootstrap ] || touch $glb_wkdir/lib/bootstrap
+    [ -f $wkdir/lib/bootstrap ] || touch $wkdir/lib/bootstrap; return 1
 }
 
 #
@@ -151,7 +137,7 @@ opa_rem[all]="Runs on all of the available nodes"
 opa_als[a]="all"
 opa_fun_all() {
     # 0: Local machine, 1: Specifies nodes, 2: Specifies group 3: All nodes
-    glb_run_level=3
+    glb_run_level=3; return 0
 }
 
 #
@@ -161,7 +147,7 @@ opa_fun_all() {
 opa_rem[daemon]="Run a command immune to hangups, with output to a non-tty"
 opa_als[daemon]="daemon"
 opa_fun_daemon() {
-    glb_run_daemon=1
+    glb_run_daemon=1; return 0
 }
 
 #
@@ -172,7 +158,7 @@ opa_fun_daemon() {
 opa_rem[sudo]="Execute a command as another user"
 opa_als[u]="sudo"
 opa_fun_sudo() {
-    glb_run_sudo=1
+    glb_run_sudo=1; return 0
 }
 
 #
@@ -182,10 +168,9 @@ opa_fun_sudo() {
 opa_rem[xtrace]="Print command traces before executing command"
 opa_als[xtrace]="xtrace"
 opa_fun_xtrace() {
-    set -o xtrace
-
     # trap 'echo "# $BASH_COMMAND"' DEBUG
 
     # Prints shell input lines as they are read
     # set -o verbose
+    set -o xtrace; return 0
 }
