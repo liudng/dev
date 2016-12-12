@@ -3,6 +3,27 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+#
+# Shell Style Guide: https://google.github.io/styleguide/shell.xml
+#
+# dev_xxx: Framwork functions, declared in bin/dev.
+# glb_xxx: Global variables, declared in bin/dev.
+#
+# opa_rem: Optional arguments description variables(readonly).
+# opa_als: Alias of optional arguments(readonly).
+# opa_fun_xxx: Optional arguments function.
+#
+# cfg_xxx: Configurations, declared in config file(readonly).
+# cmd_xxx: Command function, declared in xxx.cmd files by user.
+# xxx: Local varialbes, declared in xxx.cmd files by user. Declare
+#      function-specific variables with local. Declaration and assignment
+#      should be on different lines. for example:
+#          local file
+#          file="/path/to/file/name"
+#      or (only in function)
+#          declare file="/path/to/file/name"
+#
+
 # trace ERR through pipes
 set -o pipefail
 

@@ -14,6 +14,7 @@
 # Projects
 # declare -Agr cfg_projects=(
 #     [sys]=/path/to/sys-project
+#     [app]=/path/to/app-project
 # )
 
 # Private key path

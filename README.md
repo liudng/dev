@@ -12,30 +12,6 @@ Development environment initialization and deployment toolkit.
 ## Useage
 
 ```sh
-dev --deploy root
-```
-
-```sh
-#
-# Shell Style Guide: https://google.github.io/styleguide/shell.xml
-#
-# dev_xxx: Framwork functions, declared in bin/dev.
-# glb_xxx: Global variables, declared in bin/dev.
-#
-# opa_rem: Optional arguments description variables(readonly).
-# opa_als: Alias of optional arguments(readonly).
-# opa_fun_xxx: Optional arguments function.
-# opa_xxx:     Optional global variables.
-#
-# cfg_xxx: Configurations, declared in config file(readonly).
-# cmd_xxx: Command function, declared in xxx.cmd files by user.
-# xxx: Local varialbes, declared in xxx.cmd files by user. Declare
-#      function-specific variables with local. Declaration and assignment
-#      should be on different lines. for example:
-#          local file
-#          file="/path/to/file/name"
-#      or (only in function)
-#          declare file="/path/to/file/name"
-#
-
+dev [-options] [project] <file> <command> [arguments] ...
+dev <-options> [project] [arguments] ...
 ```
