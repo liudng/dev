@@ -5,13 +5,11 @@
 
 
 cmd_helloworld() {
-    echo "$arg_hello $arg_world"
-
-    for i in `seq 1 10`;
-    do
+    for i in `seq 1 3`; do
         sleep 1
         echo "$i"
     done
+    echo "$arg_hello $arg_world"
 }
 
 cmd_stdout_and_stderr() {

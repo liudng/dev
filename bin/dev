@@ -30,8 +30,17 @@ set -o pipefail
 # set -e : exit the script if any statement returns a non-true return value
 set -o errexit
 
+# 0: Local machine, 1: Specifies nodes, 2: Specifies group 3: All nodes
+declare -g glb_run=1 glb_run_level=0 glb_run_sudo=0 glb_run_daemon=0
+
+# Command file
+declare -g glb_file glb_func glb_user
+
 # For option arguments
-declare -Ag opa_rem opa_als opa_fun
+declare -Ag opa_rem opa_als
+
+# The sudo prefix
+[ "$(whoami)" != "root" ] && declare -gr glb_sudo="sudo" || declare -gr glb_sudo=""
 
 #
 # Useage information.
@@ -80,7 +89,7 @@ dev_help_functions() {
 
     for i in $(compgen -A function); do
         if [[ "${i:0:4}" == "cmd_" ]]; then
-            echo -e "  ${i:4} \t in $glb_wkdir/cmd/$glb_cmd_file:$i()"
+            echo -e "  ${i:4} \t in $glb_wkdir/cmd/$glb_file:$i()"
         fi
     done
 
@@ -98,25 +107,6 @@ dev_cmd_files() {
             ret="$ret $2${i:0:-4}"
         fi
     done
-}
-
-#
-# Init a global constaiont
-# Useage:
-#     dev_const <name> <config-value> <default-value>
-#
-dev_const() {
-    declare varname="glb_$1"
-    [ -z "$2" ] && declare -gr "$varname=$3" || declare -gr "$varname=$2"
-}
-
-#
-# Useage:
-#     dev_wkdir <dev-path>
-#
-dev_wkdir() {
-    declare base="$1" && [ -L "$base" ] && base=$(readlink -f "$base")
-    declare -gr glb_base="$(dirname $(dirname $(realpath $base)))"
 }
 
 #
@@ -151,63 +141,65 @@ dev_dnf() {
 
 #
 # Useage:
-#     dev_conf $@
+#     dev_base
 #
-dev_conf() {
-    # Include configuration files
-    declare cfg
-    for cfg in "$HOME/.dev.conf", "$glb_base/etc/dev.conf"; do
+dev_base() {
+    declare base="$0" cfg;
+    [ -L "$base" ] && base=$(readlink -f $base); base=$(dirname $(realpath $base))
+    if [ "$(basename $base)" == "bin" ]; then
+        declare -gr glb_base="$(dirname $base)"
+    else
+        declare -gr glb_base="$base"
+    fi
+
+    for cfg in "$glb_base/dev.conf", "$HOME/.dev.conf", "$glb_base/etc/dev.conf"; do
         [ -f $cfg ] && . $cfg && break
     done
 
-    # Support multiple projects.
-    if [ $# -ge 1 ] && [ -n "${cfg_projects[$1]+1}" ]; then
-        declare -gr glb_prj="$1"
-        declare -gr glb_wkdir=${cfg_projects[$1]}
-        return 0
-    else
-        declare -gr glb_prj="dev"
-        declare -gr glb_wkdir=$glb_base
-        return 1
-    fi
+    # Private key: glb_ssh_key
+    [ -z "$cfg_ssh_key" ] && declare -gr glb_ssh_key="$HOME/.ssh/id_rsa" || \
+        declare -gr glb_ssh_key="$HOME/.ssh/$cfg_ssh_key"
 }
 
 #
-# Global variables
 # Useage:
-#     dev_global <base-dir>
+#     dev_project <prj>
 #
-dev_global() {
-    # The sudo prefix
-    [ "$(whoami)" != "root" ] && declare -gr glb_sudo="sudo" || declare -gr glb_sudo=""
+dev_prj() {
+    [ ! -z "$glb_prj"] && return 1
 
-    # Private key: glb_ssh_key
-    dev_const "ssh_key" "$HOME/.ssh/$cfg_ssh_key" "$HOME/.ssh/id_rsa"
-
-    # 0: Local machine, 1: Specifies nodes, 2: Specifies group 3: All nodes
-    declare -g glb_run=1 glb_run_level=0 glb_run_sudo=0 glb_run_daemon=0
-
-    # Command file
-    declare -g glb_cmd_file
+    if [ $# -ge 1 ] && [ -n "${cfg_projects[$1]+1}" ]; then
+        declare -gr glb_prj="$1" glb_wkdir=${cfg_projects[$1]}; return 0
+    else
+        declare -gr glb_prj="dev" glb_wkdir=$glb_base; return 1
+    fi
 }
 
 #
 # Prepare command files
 # Useage:
-#     dev_load_files <cmd-file>
+#     dev_cmd <cmd-file>
 #
-dev_load_files() {
-    [[ $# -lt 1 || -z "$1" ]] && return 0 || glb_cmd_file="$1"
-    [ ! -f $glb_wkdir/cmd/$1.cmd ] && return 0
+dev_cmd() {
+    [ ! -z "$glb_func"] && return 1
 
-    # Include arguments
-    [ -f $glb_wkdir/etc/cmd/$1.conf ] && . $glb_wkdir/etc/cmd/$1.conf
+    if [[ $# -le 0 || -z "$1" ]]; then
+        dev_help_useage >&2; dev_help_options >&2; dev_help_files >&2; return 1
+    fi
 
-    # Include variables
+    [ -f $glb_wkdir/lib/bootstrap ] && . $glb_wkdir/lib/bootstrap
+    [ -f $glb_wkdir/etc/dev.cmd/$1.conf ] && . $glb_wkdir/etc/dev.cmd/$1.conf
     [ -f $glb_wkdir/cmd/$1.var ] && . $glb_wkdir/cmd/$1.var
+    if [ ! -f $glb_wkdir/cmd/$1.cmd ]; then
+        echo "Command file not found: $glb_wkdir/cmd/$1.cmd" >&2; return 1
+    fi
 
-    # Include command file
     . $glb_wkdir/cmd/$1.cmd
+    if [[ $# -eq 1 || -z "$2" ]]; then
+        echo "Missing command function" >&2; echo >&2; dev_help_functions >&2; return 1
+    fi
+
+    glb_file="$1"; glb_func="$2"; return 0
 }
 
 #
@@ -216,34 +208,17 @@ dev_load_files() {
 #     dev_run_std <cmd-file> <cmd-function> [cmd-arguments]
 #
 dev_run() {
-    # Execute the command
-    if [[ $# -le 0 || -z "$1" ]]; then
-        echo "dev-err: missing <cmd-file>" >&2
-        echo "" >&2
-        dev_help_useage >&2
-        dev_help_options >&2
-        dev_help_files >&2
-        return 1
-    elif [[ $# -eq 1 || -z "$2" ]]; then
-        echo "dev-err: missing <cmd-function>" >&2
-        echo "" >&2
-        dev_help_useage "$1" >&2
-        # dev_help_options
-        dev_help_functions >&2
-        return 1
-    fi
+    declare cmd="" func=${glb_func/-/_}
 
-    declare cmd="" fun=${2/-/_}
-
-    [ "${fun:0:4}" == "cmd_" ] || fun="cmd_$fun"
-    if [[ "$(declare -F $fun)" != "$fun" ]]; then
-        echo "dev: command not found: $fun" >&2
+    [[ "${func:0:4}" == "cmd_" || -z "$glb_file" ]] || func="cmd_$func"
+    if [[ "$(declare -F $func)" != "$func" ]]; then
+        echo "dev: command not found: $func" >&2
         return 1
     fi
 
     if [[ $glb_run_level -eq 0 ]]; then
         # Run in local machine
-        set -- "${@:3}" && dev_exec_local $fun $@
+        dev_exec_local $func $@
     elif [[ $glb_run_level -eq 1 ]]; then
         # FIXME Run in specifies nodes
         :
@@ -252,8 +227,7 @@ dev_run() {
         :
     elif [[ $glb_run_level -eq 3 ]]; then
         # Run in all nodes
-        cmd="dev_exec_remote $glb_base/bin/dev"
-        $cmd $@
+        dev_exec_remote $glb_base/bin/dev $@
     else
         echo "dev: run level error: $glb_run_level" >&2
         return 1
@@ -291,16 +265,10 @@ dev_exec_remote() {
 #     dev_exec_local <command> <arguments>...
 #
 dev_exec_local() {
-    declare host="127.0.0.1"
-    declare user="$(whoami)"
+    declare host="127.0.0.1" user="$(whoami)"
 
     if [[ $glb_run_sudo -eq 1 ]]; then
-        unset opa_fun[sudo]
-        declare cmd="sudo $glb_base/bin/dev"
-        for opt in "${!opa_fun[@]}"; do
-            cmd="$cmd --$opt ${opa_fun[$opt]}"
-        done
-        dev_exec $host $user $cmd -- $glb_cmd_file $@
+        dev_exec $host $user sudo $glb_base/bin/dev $glb_prj $glb_file $@
     else
         dev_exec $host $user $@
     fi
@@ -349,14 +317,13 @@ dev_exec() {
 # a call to main: dev_main "$@"
 #
 dev_main() {
-    . $glb_base/lib/options
-    [ -f $glb_wkdir/lib/bootstrap ] && . $glb_wkdir/lib/bootstrap
+    [ -f $glb_base/lib/options ] && . $glb_base/lib/options
 
     declare opt arg
 
     # Prepare optional arguments
     while true ; do
-        if [[ "$1" == "--" ]]; then
+        if [[ "$1" == "--" || "$1" == "-" ]]; then
             shift; break
         elif [[ "${1:0:2}" == "--" ]]; then
             opt="${1:2}"; shift
@@ -371,35 +338,25 @@ dev_main() {
 
         if [[ "$(expr index $opt '=')" -ge 1 ]]; then
             IFS='=' read -ra arg <<< "$opt"
-            opa_fun[${arg[0]}]="${arg[1]}"
+            opa_fun_${arg[0]/-/_} "${arg[1]}"
         elif [[ ! -z "$1" && "${1:0:1}" != "-" ]]; then
-            opa_fun[$opt]="$1"; shift
+            opa_fun_${opt/-/_} "$1" || shift
         else
-            opa_fun[$opt]=""
+            opa_fun_${opt/-/_}
         fi
-    done
-
-    # Prepare files
-    dev_load_files $@
-
-    # Do optional functions
-    for opt in "${!opa_fun[@]}"; do
-        opa_fun_${opt/-/_} "${opa_fun[$opt]}"
     done
 
     # Do command function
     [ $glb_run -ne 1 ] && return 0
 
-    if [[ $# -ge 1 && -z $glb_cmd_file ]]; then
-        echo "dev: command file not found: $glb_wkdir/cmd/$glb_cmd_file.cmd" >&2
-        return 1
+    if [ -z "$glb_func" ]; then
+        dev_prj $@ && shift; dev_cmd $@ || return 1; shift; shift
+    else
+        dev_prj || true
     fi
 
-    [ "$(declare -F btp_main)" == "btp_main" ] && btp_main $@
     dev_run $@
 }
 
 # Call to main function. custom function declare before here.
-dev_wkdir $0
-dev_conf $@ && shift
-dev_global && dev_main $@
+dev_base; dev_main $@

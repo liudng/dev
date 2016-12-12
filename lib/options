@@ -70,25 +70,31 @@ opa_fun_completion() {
     if [[ $# -le 0 || -z "$1" ]]; then
         dev_cmd_files $glb_wkdir/cmd
     else
-        dev_load_files $1
+        dev_cmd $1
         for key in $(compgen -A function); do
             [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
         done
     fi
 
     echo "${ret:1}"
+
+    return 1
 }
 
 #
 # Useage:
-#     dev --deploy [user]
+#     dev --deploy <project> [user]
 #
 opa_rem[deploy]="Remote deployment"
 opa_als[deploy]="deploy"
 opa_fun_deploy() {
-    glb_run=0
+    glb_func="dev_deploy"
+}
 
-    declare cmd user host sudoer init_tar=$glb_wkdir/dev-init.tar
+dev_deploy() {
+    declare cmd user host sudoer init_tar=/tmp/dev-init.tar
+
+    # dev_prj $@ || true
 
     cmd="mkdir -m 700 -p \$HOME/.ssh &&"
     cmd="$cmd cat > \$HOME/.ssh/authorized_keys &&"
@@ -117,9 +123,10 @@ opa_fun_deploy() {
 
     rm -f $init_tar
 }
+
 #
 # Useage:
-#     dev <prj> --init
+#     dev --init <prj>
 #
 opa_rem[init]="Create a new project directory structure"
 opa_als[init]="init"
@@ -140,6 +147,8 @@ opa_fun_init() {
         $glb_wkdir/var/tmp
 
     [ -f $glb_wkdir/lib/bootstrap ] || touch $glb_wkdir/lib/bootstrap
+
+    return 1
 }
 
 #
@@ -166,8 +175,8 @@ opa_fun_daemon() {
 
 #
 # Useage:
-#     dev -u [user]
-#     dev --sudo [user]
+#     dev -u
+#     dev --sudo
 #
 opa_rem[sudo]="Execute a command as another user"
 opa_als[u]="sudo"
@@ -189,3 +198,24 @@ opa_fun_xtrace() {
     # Prints shell input lines as they are read
     # set -o verbose
 }
+
+#
+# Useage:
+#     dev --passwd
+#
+opa_rem[passwd]="Password manage utility"
+opa_als[passwd]="passwd"
+opa_fun_passwd() {
+    :
+}
+
+#
+# Useage:
+#     dev --repos
+#
+opa_rem[repos]="Repository"
+opa_als[repos]="repos"
+opa_fun_repos() {
+    :
+}
+
