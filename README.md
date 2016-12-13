@@ -9,9 +9,13 @@ Development environment initialization and deployment toolkit.
 * Verify that all nodes are ready to run the command.
 * When a machine runs a command that fails, you can customize a handler function.
 
-## Useage
+## Usage
 
 ```sh
-dev [-options] [project] <file> <command> [arguments] ...
+dev [-options] [project] <cmd-file> <cmd-func> [arguments] ...
 dev <-options> [project] [arguments] ...
 ```
+
+## Notes
+
+* Shell style configuration files.

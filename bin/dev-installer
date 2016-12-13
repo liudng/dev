@@ -4,15 +4,15 @@
 # license that can be found in the LICENSE file.
 
 #
-# Useage:
+# Usage:
 #     dev-installer <wkdir> <sudoer>
 #
 
-[ $# -lt 2 ] && echo "Useage: dev-installer <wkdir> <sudoer>" >&2 && exit 1
+[ $# -lt 2 ] && echo "Usage: dev-installer <wkdir> <sudoer>" >&2 && exit 1
 
-declare wkdir=$1 sudoer=$2 home="/root"
+declare wkdir=$1 sudoer=$2 home
 
-if [ "$sudoer" != "root" ]; then
+if [ "$sudoer" != "root" ] && [ "$(whoami)" != "$sudoer" ]; then
     home="/home/$sudoer"
 
     if ! getent passwd $sudoer; then

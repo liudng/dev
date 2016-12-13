@@ -27,19 +27,27 @@
 _dev_init_completion() {
     # Pointer to current completion word.
     # By convention, it's named "cur" but this isn't strictly necessary.
-    local cur prev opts
+    local prj cur prev opts
 
     COMPREPLY=() # Array variable storing the possible completions.
     cur=${COMP_WORDS[COMP_CWORD]}
     prev=${COMP_WORDS[COMP_CWORD-1]}
 
-    if [[ "${cur:0:1}" == "-" ]]; then
-        opts="$(dev --options 2>/dev/null)"
-    elif [[ $COMP_CWORD -eq 1 ]]; then
-        opts="$(dev --completion 2>/dev/null)"
-    else
-        opts="$(dev --completion $prev 2>/dev/null)"
-    fi
+    # if [[ "${cur:0:1}" == "-" ]]; then
+    #     opts="$(dev --options 2>/dev/null)"
+    # elif [[ $COMP_CWORD -eq 1 ]]; then
+    #     opts="$(dev --completion 2>/dev/null)"
+    # else
+    #     opts="$(dev --completion $prev 2>/dev/null)"
+    # fi
+
+    # echo "Cur:$cur"
+    # echo "COMP:${COMP_WORDS[@]}"
+
+    declare arr=(${COMP_WORDS[@]})
+    unset arr[COMP_CWORD]
+    unset arr[0]
+    opts=$(dev --completion ":$cur" ${arr[@]} 2>/dev/null)
 
     COMPREPLY=( $(compgen -W "$opts" -- $cur ) );
 }

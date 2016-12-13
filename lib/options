@@ -4,27 +4,28 @@
 # license that can be found in the LICENSE file.
 
 #
-# Useage:
+# Usage:
 #     dev --help
 #
 opa_rem[help]="Help topic and usage information"
 opa_als[h]="help"
 opa_fun_help() {
-    glb_run=0
-
     if [[ $# -le 0 || -z "$1" ]]; then
-        dev_help_useage
+        dev_run 0 || return 0
+        dev_help_usage
         dev_help_options
         dev_help_files
     else
-        dev_help_useage "$1"
+        dev_run 0 || return 1
+        dev_help_usage "$1"
         dev_help_options
         dev_help_functions
+        return 1
     fi
 }
 
 #
-# Useage:
+# Usage:
 #     dev --projects
 #
 opa_rem[projects]="List all of the available projects"
@@ -34,125 +35,74 @@ opa_fun_projects() {
 }
 
 #
-# Useage:
+# Usage:
 #     dev --options
 #
 opa_rem[options]="List all optional arguments"
 opa_als[options]="options"
 opa_fun_options() {
-    glb_run=0
-
-    declare opt
-    declare als
-    declare ret
-
-    for als in "${!opa_als[@]}"; do
-        opt="${opa_als[$als]}"
-        ret="$ret --${opt//_/-}" && [ "$opt" != "$als" ] && ret="$ret -$als"
-    done
-
-    echo "${ret:1}"
+    dev_run 0 || return 0
+    dev_options
 }
 
 #
-# Useage:
-#     dev --completion
-#     dev --completion <cmd-file>
+# Usage:
+#     dev --completion <cur>
 #
 opa_rem[completion]="List all command files or functions"
 opa_als[completion]="completion"
 opa_fun_completion() {
-    glb_run=0
-
-    declare ret
-    declare key
-
-    if [[ $# -le 0 || -z "$1" ]]; then
-        dev_cmd_files $glb_wkdir/cmd
-    else
-        dev_cmd $1
-        for key in $(compgen -A function); do
-            [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
-        done
-    fi
-
-    echo "${ret:1}"
-
-    return 1
+    dev_run 3 || return $#
+    dev_func "dev_completion" || return $#
+    [ -z "$1" ] && glb_argv="" && return 0 || glb_argv="$1" && return 1
 }
 
 #
-# Useage:
-#     dev --deploy <project> [user]
+# Usage:
+#     dev --deploy [prj]
 #
 opa_rem[deploy]="Remote deployment"
 opa_als[deploy]="deploy"
 opa_fun_deploy() {
-    glb_func="dev_deploy"
-}
-
-dev_deploy() {
-    declare cmd user host sudoer init_tar=/tmp/dev-init.tar
-
-    # dev_prj $@ || true
-
-    cmd="mkdir -m 700 -p \$HOME/.ssh &&"
-    cmd="$cmd cat > \$HOME/.ssh/authorized_keys &&"
-    cmd="$cmd chmod 600 \$HOME/.ssh/authorized_keys"
-
-    [ -f $init_tar ] && rm -f $init_tar
-
-    cd $glb_wkdir
-    tar --exclude='./dev-init.tar' \
-        --exclude='./*.sublime-*' \
-        --exclude='./var/log' \
-        --exclude='./var/tmp' \
-        -cf $init_tar .
-
-    for host in "${!cfg_nodes[@]}"; do
-        sudoer="${cfg_nodes[$host]}"
-        [ -z $1 ] && user="$sudoer" || user="$1"
-
-        # public key, remotely write to a file using SSH
-        # It's will overwrite authorized_keys
-        cat $glb_ssh_key.pub | dev_ssh $user@$host "$cmd"
-        dev_scp $glb_ssh_key $glb_ssh_key.pub $user@$host:\$HOME/.ssh
-        dev_scp $init_tar $glb_base/bin/dev-installer $user@$host:\$HOME
-        dev_ssh $user@$host "\$HOME/dev-installer $glb_wkdir $sudoer"
-    done
-
-    rm -f $init_tar
+    dev_run 2 || return $#
+    dev_func "dev_deploy" || return $#
+    [ -z "$1" ] && glb_argv="" && return 0 || glb_argv="$1" && return 1
 }
 
 #
-# Useage:
+# Usage:
 #     dev --init <prj>
 #
 opa_rem[init]="Create a new project directory structure"
 opa_als[init]="init"
 opa_fun_init() {
-    glb_run=0
+    dev_run 0 || return $#
 
-    [ -z "$glb_prj" ] || [ "$glb_prj" = "dev" ] && echo "Useage: dev <prj> --init" >&2 && return 1
-    [ -d $glb_wkdir/bin ] || [ -d $glb_wkdir/cmd ] && echo "Project $glb_prj exists" >&2 && return 1
+    [ -z "$1" ] && echo "Usage: dev --init <prj>" >&2 && return 0
+
+    declare prj="$1" wkdir="${cfg_projects[$1]}"
+
+    [ "$prj" = "dev" ] && echo "Project dev no need init" >&2 && return 1
+    [ -z "$wkdir" ] && echo "Config error: cfg_projects[$prj], in $glb_base/etc/dev.conf" >&2 && return 1
+    [ -d $wkdir/bin ] || [ -d $wkdir/cmd ] && echo "Project $prj exists" >&2 && return 1
 
     mkdir -p \
-        $glb_wkdir/bin \
-        $glb_wkdir/cmd \
-        $glb_wkdir/etc/cmd \
-        $glb_wkdir/lib \
-        $glb_wkdir/var/log \
-        $glb_wkdir/var/misc \
-        $glb_wkdir/var/pkg \
-        $glb_wkdir/var/tmp
+        $wkdir/bin \
+        $wkdir/cmd \
+        $wkdir/etc/cmd \
+        $wkdir/lib \
+        $wkdir/var/log \
+        $wkdir/var/misc \
+        $wkdir/var/pkg \
+        $wkdir/var/tmp
 
-    [ -f $glb_wkdir/lib/bootstrap ] || touch $glb_wkdir/lib/bootstrap
+    [ -f $wkdir/lib/bootstrap ] || touch $wkdir/lib/bootstrap
 
     return 1
 }
 
 #
-# Useage:
+# Usage:
 #     dev -a
 #     dev --all
 #
@@ -164,7 +114,7 @@ opa_fun_all() {
 }
 
 #
-# Useage:
+# Usage:
 #     dev --daemon
 #
 opa_rem[daemon]="Run a command immune to hangups, with output to a non-tty"
@@ -174,7 +124,7 @@ opa_fun_daemon() {
 }
 
 #
-# Useage:
+# Usage:
 #     dev -u
 #     dev --sudo
 #
@@ -185,7 +135,7 @@ opa_fun_sudo() {
 }
 
 #
-# Useage:
+# Usage:
 #     dev --xtrace
 #
 opa_rem[xtrace]="Print command traces before executing command"
@@ -200,7 +150,28 @@ opa_fun_xtrace() {
 }
 
 #
-# Useage:
+# Usage:
+#     dev --user <user>
+#
+opa_rem[user]="User"
+opa_als[user]="user"
+opa_fun_user() {
+    [ -z "$1" ] && echo "Usage: dev --user <user>" >&2 && return 0
+    glb_user="$1"; return 1
+}
+
+#
+# Usage:
+#     dev --dry-run
+#
+opa_rem[dry-run]="List all command files or functions"
+opa_als[dry-run]="dry-run"
+opa_fun_dry_run() {
+    dev_run 4 || return 0
+}
+
+#
+# Usage:
 #     dev --passwd
 #
 opa_rem[passwd]="Password manage utility"
@@ -210,7 +181,7 @@ opa_fun_passwd() {
 }
 
 #
-# Useage:
+# Usage:
 #     dev --repos
 #
 opa_rem[repos]="Repository"
