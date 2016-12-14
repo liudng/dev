@@ -30,18 +30,20 @@ set -o pipefail
 # set -e : exit the script if any statement returns a non-true return value
 set -o errexit
 
-# Run-level 0:Local machine, 1:Specifies nodes, 2:Specifies group 3:All nodes
-# 1:Changeable(run default) 0:Not-run(Readonly) 2:Run(Readonly) 3:Run(Compact) 4:Dry-run
-declare -g glb_run=1 glb_run_level=0 glb_run_sudo=0 glb_run_daemon=0
+declare glb_version="1.2"
+
+# Run-state:
+# 0:Not-run(readonly)
+# 1:Run(alterable,local,default)
+# 2:Run(readonly,local)
+# 3:Run(readonly,remote)
+declare -g glb_run=1 glb_run_dry=0 glb_run_compact=0 glb_run_sudo=0 glb_run_daemon=0
 
 # Command file
 declare -g glb_file glb_func glb_argv glb_user
 
 # For option arguments
-declare -Ag opa_rem opa_als
-
-# The sudo prefix
-[ "$(whoami)" != "root" ] && declare -gr glb_sudo="sudo" || declare -gr glb_sudo=""
+declare -Ag glb_run_nodes opa_rem opa_als
 
 #
 # Usage information.
@@ -50,7 +52,8 @@ dev_help_usage() {
     declare files="<cmd-file>"
     [ ! -z "$1" ] && files="$1"
 
-    echo "Usage: dev [options] $files <cmd-function> [cmd-arguments]"; echo
+    echo "Usage: dev [--[options [args]]] [prj] $files <cmd-func> [cmd-args] ..."
+    echo "       dev [--[options [args]]] [args] ..."; echo
 }
 
 #
@@ -81,14 +84,43 @@ dev_help_options_items() {
 }
 
 #
+# Usage:
+#     dev_help_projects [cmd-file]
+#
+dev_help_projects() {
+    declare prj ret wkdir
+    if [[ $# -le 0 && "$glb_prj" == "dev" ]]; then
+        echo "These are the all aviliable <prj>s:"; echo
+        # List all projects
+        for prj in "${!cfg_projects[@]}"; do
+            ret="$ret $prj"
+        done
+        echo ${ret:1} |tr " " "\n" |column -c $(tput cols) |fmt; echo
+
+        # List files in dev project
+        dev_help_files $glb_base; return 0
+    fi
+
+    if [[ $# -le 0 ]]; then
+        # List all cmd-file
+        dev_help_files $glb_wkdir
+    else
+        # List all cmd-func
+        dev_help_functions $glb_wkdir $1
+    fi
+}
+
+#
 # List all command files.
 #
 dev_help_files() {
-    [ -z $glb_wkdir ] && return 0
+    declare wkdir
+    [ -z "$1" ] && wkdir="$glb_wkdir" || wkdir="$1"
+    [ -z $wkdir ] && return 0
     echo "These are the all aviliable <cmd-file>s:"; echo
 
     declare ret
-    ret="$ret $(dev_cmd_files $glb_wkdir/cmd)"
+    ret="$ret $(dev_cmd_files $wkdir/cmd)"
     echo ${ret:1} |tr " " "\n" |column -c $(tput cols) |fmt; echo
 }
 
@@ -96,11 +128,14 @@ dev_help_files() {
 # List all functions of included <cmd-file>s.
 #
 dev_help_functions() {
-    echo "These are the all aviliable <cmd-function>s:"; echo
+    declare wkdir cf
+    [ -z "$1" ] && wkdir="$glb_wkdir" || wkdir="$1"
+    [ -z "$2" ] && cf="$glb_file" || cf="$2"
+    echo "These are the all aviliable <cmd-func>s:"; echo
 
     for i in $(compgen -A function); do
         if [[ "${i:0:4}" == "cmd_" ]]; then
-            echo -e "  ${i:4} \t in $glb_wkdir/cmd/$glb_file:$i()"
+            echo -e "  ${i:4} \t in $wkdir/cmd/$glb_file:$i()"
         fi
     done
 
@@ -170,23 +205,34 @@ dev_options() {
 #     dev_completion [prj] [cmd-file]
 #
 dev_completion() {
-    # echo "Args:$@" >&2
     declare ret cur="${glb_argv:1}" key prj wkdir=$glb_base
-    # echo "cur: $cur" >&2
 
     [ "${cur:0:1}" == "-" ] && dev_options && return 0
 
-    if [ ! -z "$1" ]; then
-        wkdir="${cfg_projects[$1]}"
-    fi
-    # echo "WkDir: $wkdir" >&2
-
-    if [[ $# -le 0 || -z "$wkdir" ]]; then
+    if [[ $# -le 0 ]]; then
         # List all projects
         for prj in "${!cfg_projects[@]}"; do
             ret="$ret $prj"
         done
-    elif [ $# -eq 1 ]; then
+
+        # List files in dev project
+        ret="$ret $(dev_cmd_files $glb_base/cmd | tr '\n' ' ')"
+        echo "${ret:1}"; return 0
+    fi
+
+    # invalid prj
+    if [ -z "${cfg_projects[$1]}" ]; then
+        # List all cmd-func
+        dev_load_files $glb_base $1
+        for key in $(compgen -A function); do
+            [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
+        done
+        echo "${ret:1}"; return 0
+    fi
+
+    wkdir="${cfg_projects[$1]}"
+
+    if [[ $# -eq 1 || ! -z "$wkdir" ]]; then
         # List all cmd-file
         ret="$ret $(dev_cmd_files $wkdir/cmd | tr '\n' ' ')"
     elif [ $# -eq 2 ]; then
@@ -209,6 +255,7 @@ dev_deploy() {
 
     [ -z "$glb_argv" ] && wkdir="$glb_wkdir" || wkdir="${cfg_projects[$glb_argv]}"
     [ -z "$wkdir" ] && echo "Config error: cfg_projects[$prj], in $glb_base/etc/dev.conf" >&2 && return 1
+    [ "${#glb_run_nodes[@]}" -le 0 ] && echo "Nodes is empty" >&2 && return 1
 
     declare cmd user host sudoer init_tar=/tmp/dev-init.tar
 
@@ -225,8 +272,8 @@ dev_deploy() {
         --exclude='./var/tmp' \
         -cf $init_tar .
 
-    for host in "${!cfg_nodes[@]}"; do
-        sudoer="${cfg_nodes[$host]}"
+    for host in "${!glb_run_nodes[@]}"; do
+        sudoer="${glb_run_nodes[$host]}"
         [ -z "$glb_user" ] && user="$sudoer" || user="$glb_user"
 
         # public key, remotely write to a file using SSH
@@ -269,6 +316,10 @@ dev_base() {
 dev_prj() {
     [ ! -z "$glb_prj"] && return 1
 
+    if [ "$1" == "dev" ]; then
+        declare -gr glb_prj="dev" glb_wkdir=$glb_base; return 0
+    fi
+
     if [ $# -ge 1 ] && [ -n "${cfg_projects[$1]+1}" ]; then
         declare -gr glb_prj="$1" glb_wkdir=${cfg_projects[$1]}; return 0
     else
@@ -285,7 +336,7 @@ dev_cmd() {
     [ ! -z "$glb_func"] && return 1
 
     if [[ $# -le 0 || -z "$1" ]]; then
-        dev_help_usage >&2; dev_help_options >&2; dev_help_files >&2; return 1
+        dev_help_usage >&2; dev_help_options >&2; dev_help_projects >&2; return 1
     fi
 
     if ! dev_load_files $glb_wkdir $1; then
@@ -293,7 +344,7 @@ dev_cmd() {
     fi
 
     if [[ $# -eq 1 || -z "$2" ]]; then
-        echo "Missing command function" >&2; echo >&2; dev_help_functions >&2; return 1
+        echo "Missing command function" >&2; echo >&2; dev_help_projects $@ >&2; return 1
     fi
 
     glb_file="$1"; glb_func="$2"; return 0
@@ -314,10 +365,10 @@ dev_func() {
 # Set run state
 #
 dev_run() {
-    if [ "$glb_run" -ne 1 ]; then
-        echo "Error: \$glb_run has a value: $glb_run" >&2; return 1
+    if [[ "$glb_run" -eq 1 ]]; then
+        glb_run="$1" return 0
     else
-        glb_run="$1"
+        echo "Error: \$glb_run has a value: $glb_run" >&2; return 1
     fi
 }
 
@@ -336,50 +387,38 @@ dev_load_files() {
 #
 # Execute the command
 # Usage:
-#     dev_real_run <cmd-file> <cmd-function> [cmd-arguments]
+#     dev_real_run <cmd-file> <cmd-func> [cmd-args]
 #
 dev_real_run() {
     declare cmd="" func=${glb_func/-/_}
 
     [[ "${func:0:4}" == "cmd_" || -z "$glb_file" ]] || func="cmd_$func"
     if [[ "$(declare -F $func)" != "$func" ]]; then
-        echo "Command not found: $func" >&2
-        return 1
+        echo "Command not found: $func" >&2; return 1
     fi
 
-    if [[ $glb_run_level -eq 0 ]]; then
+    if [[ $glb_run -le 2 ]]; then
         # Run in local machine
         dev_exec_local $func $@
-    elif [[ $glb_run_level -eq 1 ]]; then
-        # FIXME Run in specifies nodes
-        :
-    elif [[ $glb_run_level -eq 2 ]]; then
-        # FIXME Run in specifies group
-        :
-    elif [[ $glb_run_level -eq 3 ]]; then
-        # Run in all nodes
-        dev_exec_remote $glb_base/bin/dev $@
     else
-        echo "Run level error: $glb_run_level" >&2
-        return 1
+        dev_exec_remote $glb_base/bin/dev $glb_prj $glb_file $func $@
     fi
 }
 
 #
 # Execute a command from all nodes.
 # Usage:
-#     dev_exec_remote dev [options] <cmd-file> <cmd-function> [cmd-arguments]
+#     dev_exec_remote dev [options] <cmd-file> <cmd-func> [cmd-args]
 #
 dev_exec_remote() {
-    if [[ "${#cfg_nodes[@]}" -le 0 ]]; then
-        echo "Empty nodes" >&2
-        return 1
+    if [[ "${#glb_run_nodes[@]}" -le 0 ]]; then
+        echo "Empty nodes" >&2; return 1
     fi
 
     declare cmd user host
 
-    for host in "${!cfg_nodes[@]}"; do
-        user="${cfg_nodes[$host]}"
+    for host in "${!glb_run_nodes[@]}"; do
+        user="${glb_run_nodes[$host]}"
         cmd="dev_ssh $user@$host"
         [ $glb_run_sudo -eq 1 ] && cmd="$cmd sudo"
 
@@ -396,13 +435,10 @@ dev_exec_remote() {
 #     dev_exec_local <command> <arguments>...
 #
 dev_exec_local() {
-    declare host="127.0.0.1" user="$(whoami)"
-
-    if [[ $glb_run_sudo -eq 1 ]]; then
-        dev_exec $host $user sudo $glb_base/bin/dev $glb_prj $glb_file $@
-    else
-        dev_exec $host $user $@
-    fi
+    declare host="127.0.0.1" user="$(whoami)" cmd
+    cmd="$host $user"
+    [ $glb_run_sudo -eq 1 ] && cmd="$cmd sudo $glb_base/bin/dev $glb_prj $glb_file"
+    dev_exec $cmd $@
 }
 
 #
@@ -418,33 +454,25 @@ dev_exec() {
     log_out="$glb_wkdir/var/log/$host.out"
     log_err="$glb_wkdir/var/log/$host.err"
 
-    echo "$desc" >> $log_out
-    echo "$desc" >> $log_err
-
-    chmod a+wx $log_out $log_err
-
     # $@ 2>&1 | tee $log_out
     # ($@ | tee $log_out) 3>&1 1>&2 2>&3 | tee $log_err
     if [[ $glb_run_daemon -eq 1 ]]; then
         cmd="nohup $@ >>$log_out 2>>$log_err &"
-        [ $glb_run -ne 3 ] && echo "$cmd"
-        if [ $glb_run -ne 4 ]; then
-            echo "$cmd" >> $log_out && echo "$cmd" >>$log_err
-            $cmd
-
-            echo "PID: $!"
-            # echo "out: $(< $log_out)"
-            # echo "err: $(< $log_err)"
-        fi
     else
         cmd="$@"
-        [ $glb_run -ne 3 ] && echo "$cmd"
-        if [ $glb_run -ne 4 ]; then
-            echo "$cmd" >> $log_out && echo "$cmd" >>$log_err
-            $cmd
+    fi
 
-            # echo "$?"
-        fi
+    if [ $glb_run_compact -eq 0 ]; then
+        echo "$desc" >> $log_out; echo "$desc" >> $log_err
+        echo "$cmd"; echo "$cmd" >> $log_out; echo "$cmd" >>$log_err
+        chmod a+wx $log_out $log_err
+    fi
+
+    if [ $glb_run_dry -eq 0 ]; then
+        $cmd
+
+        [ $glb_run_daemon -eq 1 ] && echo "PID: $!" # echo "$?"
+        # echo "out: $(< $log_out)"; echo "err: $(< $log_err)"
     fi
 }
 
@@ -456,10 +484,11 @@ dev_exec() {
 dev_main() {
     [ -f $glb_base/lib/options ] && . $glb_base/lib/options
 
-    declare opt arg func argv
+    declare opt func args argv shft
 
     # Prepare optional arguments
     while true ; do
+        opt=""; argv=""; shft="true"
         if [[ "$1" == "--" || "$1" == "-" ]]; then
             shift; break
         elif [[ "${1:0:2}" == "--" ]]; then
@@ -474,18 +503,15 @@ dev_main() {
         [ -z $opt ] && continue
 
         if [[ "$(expr index $opt '=')" -ge 1 ]]; then
-            IFS='=' read -ra arg <<< "$opt"
-            if [[ "$(declare -F opa_fun_${arg[0]/-/_})" == "opa_fun_${arg[0]/-/_}" ]]; then
-                opa_fun_${arg[0]/-/_} "${arg[1]}" || true
-            fi
+            IFS='=' read -ra args <<< "$opt"
+            opt="${args[0]}"; argv="${args[1]}";
         elif [[ ! -z "$1" && "${1:0:1}" != "-" ]]; then
-            if [[ "$(declare -F opa_fun_${opt/-/_})" == "opa_fun_${opt/-/_}" ]]; then
-                opa_fun_${opt/-/_} "$1" || shift
-            fi
-        else
-            if [[ "$(declare -F opa_fun_${opt/-/_})" == "opa_fun_${opt/-/_}" ]]; then
-                opa_fun_${opt/-/_}
-            fi
+            argv="$1"; shft="shift"
+        fi
+
+        func="opa_fun_${opt/-/_}"
+        if [[ "$(declare -F $func)" == "$func" ]]; then
+            $func $argv || $shft
         fi
     done
 
@@ -493,13 +519,14 @@ dev_main() {
     [ $glb_run -lt 1 ] && return 0
 
     if [ -z "$glb_func" ]; then
-        dev_prj $@ && shift; dev_cmd $@ || return 1; shift; shift
+        [[ "$glb_run" -ge 1 && "${#glb_run_nodes[@]}" -gt 0 ]] && glb_run="3"
+        dev_prj $@ && shift; dev_cmd $@ || return 1; shift 2
     else
         # The default project is dev
         dev_prj || true
     fi
 
-    dev_real_run $@
+    dev_real_run "$@"
 }
 
 # Call to main function. custom function declare before here.

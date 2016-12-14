@@ -2,12 +2,14 @@
 
 Development environment initialization and deployment toolkit.
 
-* Run on all machines (default).
-* Run the command on the specified machines (-b master,slave, --batch=master,slave).
-* Only run on local machine (-l, --local), most are for debugging.
-* Run a system(Non-dev) command (-s, --sys), not download dev from remote host.
+* Manage several aspects of a project, including command, repositories, password etc.
+* Run the command on all nodes (--all) or specified nodes (--node=slave).
+* Only run on local machine (default), most are for debugging.
 * Verify that all nodes are ready to run the command.
-* When a machine runs a command that fails, you can customize a handler function.
+* When a node runs a command that fails, you can customize a handler function.
+* Console Password Manager
+* Multiple SCM repository management tool
+
 
 ## Usage
 

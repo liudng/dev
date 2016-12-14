@@ -31,12 +31,12 @@ if [ "$sudoer" != "root" ] && [ "$(whoami)" != "$sudoer" ]; then
     cp $HOME/.ssh/id_rsa* $home/.ssh
     cat $HOME/.ssh/id_rsa.pub > $home/.ssh/authorized_keys
     chown -R $sudoer:$sudoer $home/.ssh
-    chmod 600 $home/.ssh/authorized_keys $home/.ssh/id_rsa*
+    chmod 600 $home/.ssh/{authorized_keys,id_rsa*}
 fi
 
 # Install
 mkdir -p $wkdir && tar -xf $HOME/dev-init.tar -C $wkdir
-mkdir -m a+w -p $wkdir/var/log $wkdir/var/tmp
-touch $wkdir/var/log/127.0.0.1.err $wkdir/var/log/127.0.0.1.out
+mkdir -m a+w -p $wkdir/var/{log,tmp}
+touch $wkdir/var/log/127.0.0.1.{err,out}
 chown -R $sudoer:$sudoer $wkdir
-rm -f $HOME/dev-init.tar $HOME/dev-installer
+rm -f $HOME/{dev-init.tar,dev-installer}

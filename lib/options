@@ -14,24 +14,14 @@ opa_fun_help() {
         dev_run 0 || return 0
         dev_help_usage
         dev_help_options
-        dev_help_files
+        # dev_help_projects
     else
         dev_run 0 || return 1
         dev_help_usage "$1"
         dev_help_options
-        dev_help_functions
+        # dev_help_projects
         return 1
     fi
-}
-
-#
-# Usage:
-#     dev --projects
-#
-opa_rem[projects]="List all of the available projects"
-opa_als[projects]="projects"
-opa_fun_projects() {
-    :
 }
 
 #
@@ -52,7 +42,8 @@ opa_fun_options() {
 opa_rem[completion]="List all command files or functions"
 opa_als[completion]="completion"
 opa_fun_completion() {
-    dev_run 3 || return $#
+    glb_run_compact=1
+    dev_run 2 || return $#
     dev_func "dev_completion" || return $#
     [ -z "$1" ] && glb_argv="" && return 0 || glb_argv="$1" && return 1
 }
@@ -103,14 +94,28 @@ opa_fun_init() {
 
 #
 # Usage:
+#     dev --node <host>
+#
+opa_rem[node]=""
+opa_als[n]="node"
+opa_fun_node() {
+    [ -z "$1" ] && echo "Usage: dev --node <host>" >&2 && return 0
+    [ -z "${cfg_nodes[$1]}" ] && echo "Node not found: $1" >&2 && return 1
+    glb_run_nodes[$1]="${cfg_nodes[$1]}"
+}
+
+#
+# Usage:
 #     dev -a
 #     dev --all
 #
 opa_rem[all]="Runs on all of the available nodes"
 opa_als[a]="all"
 opa_fun_all() {
-    # 0: Local machine, 1: Specifies nodes, 2: Specifies group 3: All nodes
-    glb_run_level=3
+    declare host
+    for host in "${!cfg_nodes[@]}"; do
+        glb_run_nodes[$host]="${cfg_nodes[$host]}"
+    done
 }
 
 #
@@ -153,7 +158,7 @@ opa_fun_xtrace() {
 # Usage:
 #     dev --user <user>
 #
-opa_rem[user]="User"
+opa_rem[user]="Run a command with substitute user"
 opa_als[user]="user"
 opa_fun_user() {
     [ -z "$1" ] && echo "Usage: dev --user <user>" >&2 && return 0
@@ -164,17 +169,17 @@ opa_fun_user() {
 # Usage:
 #     dev --dry-run
 #
-opa_rem[dry-run]="List all command files or functions"
+opa_rem[dry-run]="Only report what would be done"
 opa_als[dry-run]="dry-run"
 opa_fun_dry_run() {
-    dev_run 4 || return 0
+    glb_run_dry=1
 }
 
 #
 # Usage:
 #     dev --passwd
 #
-opa_rem[passwd]="Password manage utility"
+opa_rem[passwd]="Console Password Manager"
 opa_als[passwd]="passwd"
 opa_fun_passwd() {
     :
@@ -184,9 +189,19 @@ opa_fun_passwd() {
 # Usage:
 #     dev --repos
 #
-opa_rem[repos]="Repository"
+opa_rem[repos]="Multiple SCM repository management tool"
 opa_als[repos]="repos"
 opa_fun_repos() {
     :
 }
 
+#
+# Usage:
+#     dev --version
+#
+opa_rem[version]=""
+opa_als[version]="version"
+opa_fun_version() {
+    dev_run 0 || return 0
+    echo "dev version $glb_version"
+}
