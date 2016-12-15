@@ -5,6 +5,7 @@
 
 
 cmd_helloworld() {
+    echo "$(whoami)"
     for i in `seq 1 3`; do
         sleep 1
         echo "$i"

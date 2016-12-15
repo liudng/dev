@@ -33,23 +33,13 @@ _dev_init_completion() {
     cur=${COMP_WORDS[COMP_CWORD]}
     prev=${COMP_WORDS[COMP_CWORD-1]}
 
-    # if [[ "${cur:0:1}" == "-" ]]; then
-    #     opts="$(dev --options 2>/dev/null)"
-    # elif [[ $COMP_CWORD -eq 1 ]]; then
-    #     opts="$(dev --completion 2>/dev/null)"
-    # else
-    #     opts="$(dev --completion $prev 2>/dev/null)"
-    # fi
-
-    # echo "Cur:$cur"
-    # echo "COMP:${COMP_WORDS[@]}"
-
     declare arr=(${COMP_WORDS[@]})
     unset arr[COMP_CWORD]
-    unset arr[0]
-    opts=$(dev --completion ":$cur" ${arr[@]} 2>/dev/null)
+    # echo "cur:$cur"
+    # echo "arr:${arr[@]:1}"
+    opts=$(dev --completion ":$cur" "${arr[@]:1}" 2>/dev/null) #
 
-    COMPREPLY=( $(compgen -W "$opts" -- $cur ) );
+    COMPREPLY=( $(compgen -W "$opts" -- "$cur" ) );
 }
 
 complete -F _dev_init_completion dev

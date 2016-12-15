@@ -209,6 +209,8 @@ dev_completion() {
 
     [ "${cur:0:1}" == "-" ] && dev_options && return 0
 
+    # echo "Args:$@" >&2
+    # echo "Cur:$cur" >&2
     if [[ $# -le 0 ]]; then
         # List all projects
         for prj in "${!cfg_projects[@]}"; do
@@ -232,7 +234,7 @@ dev_completion() {
 
     wkdir="${cfg_projects[$1]}"
 
-    if [[ $# -eq 1 || ! -z "$wkdir" ]]; then
+    if [[ $# -eq 1 && ! -z "$wkdir" ]]; then
         # List all cmd-file
         ret="$ret $(dev_cmd_files $wkdir/cmd | tr '\n' ' ')"
     elif [ $# -eq 2 ]; then
@@ -412,14 +414,14 @@ dev_real_run() {
 #
 dev_exec_remote() {
     if [[ "${#glb_run_nodes[@]}" -le 0 ]]; then
-        echo "Empty nodes" >&2; return 1
+        echo "Nodes is empty" >&2; return 1
     fi
 
     declare cmd user host
 
     for host in "${!glb_run_nodes[@]}"; do
         user="${glb_run_nodes[$host]}"
-        cmd="dev_ssh $user@$host"
+        cmd="ssh -i $glb_ssh_key -o StrictHostKeyChecking=no $user@$host"
         [ $glb_run_sudo -eq 1 ] && cmd="$cmd sudo"
 
         set +o errexit
@@ -456,24 +458,25 @@ dev_exec() {
 
     # $@ 2>&1 | tee $log_out
     # ($@ | tee $log_out) 3>&1 1>&2 2>&3 | tee $log_err
-    if [[ $glb_run_daemon -eq 1 ]]; then
-        cmd="nohup $@ >>$log_out 2>>$log_err &"
-    else
-        cmd="$@"
-    fi
+    cmd="$@"
 
     if [ $glb_run_compact -eq 0 ]; then
-        echo "$desc" >> $log_out; echo "$desc" >> $log_err
-        echo "$cmd"; echo "$cmd" >> $log_out; echo "$cmd" >>$log_err
+        echo "$desc" >>$log_out; echo "$desc" >>$log_err
+        echo "$cmd"; echo "$cmd" >>$log_out; echo "$cmd" >>$log_err
         chmod a+wx $log_out $log_err
     fi
 
-    if [ $glb_run_dry -eq 0 ]; then
-        $cmd
+    [ $glb_run_dry -eq 1 ] && return 0
 
-        [ $glb_run_daemon -eq 1 ] && echo "PID: $!" # echo "$?"
-        # echo "out: $(< $log_out)"; echo "err: $(< $log_err)"
+    if [ $glb_run_daemon -eq 1 ]; then
+        nohup $cmd >>$log_out 2>>$log_err &
+        echo "PID: $!"
+    else
+        $cmd
+        # echo "$?"
     fi
+
+    # echo "out: $(< $log_out)"; echo "err: $(< $log_err)"
 }
 
 #
