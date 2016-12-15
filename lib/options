@@ -104,7 +104,7 @@ opa_fun_node() {
     [ -z "$1" ] && echo "Usage: dev --node <host>" >&2 && return 0
     [ -z "${cfg_nodes[$1]}" ] && echo "Node not found: $1" >&2 && return 1
     glb_run_nodes[$1]="${cfg_nodes[$1]}"
-    reutrn 1
+    return 1
 }
 
 #
