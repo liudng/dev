@@ -309,6 +309,8 @@ dev_base() {
     # Private key: glb_ssh_key
     [ -z "$cfg_ssh_key" ] && declare -gr glb_ssh_key="$HOME/.ssh/id_rsa" || \
         declare -gr glb_ssh_key="$HOME/.ssh/$cfg_ssh_key"
+
+    [ -f $glb_base/lib/options ] && . $glb_base/lib/options
 }
 
 #
@@ -485,8 +487,6 @@ dev_exec() {
 # a call to main: dev_main "$@"
 #
 dev_main() {
-    [ -f $glb_base/lib/options ] && . $glb_base/lib/options
-
     declare opt func args argv shft
 
     # Prepare optional arguments

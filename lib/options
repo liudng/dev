@@ -141,7 +141,7 @@ opa_fun_daemon() {
 opa_rem[sudo]="Execute a command as another user"
 opa_als[u]="sudo"
 opa_fun_sudo() {
-    glb_run_sudo=1
+    [ "$glb_run_compact" -eq 0 ] && glb_run_sudo=1
     return 0
 }
 
