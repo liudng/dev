@@ -10,9 +10,9 @@
 
 [ $# -lt 2 ] && echo "Usage: dev-installer <wkdir> <sudoer>" >&2 && exit 1
 
-declare wkdir=$1 sudoer=$2 home
+declare wkdir=$1 sudoer=$2 home="/root"
 
-if [ "$sudoer" != "root" ] && [ "$(whoami)" != "$sudoer" ]; then
+if [ "$sudoer" != "root" ] && [ "$(whoami)" == "$sudoer" ]; then
     home="/home/$sudoer"
 
     if ! getent passwd $sudoer; then
@@ -35,8 +35,17 @@ if [ "$sudoer" != "root" ] && [ "$(whoami)" != "$sudoer" ]; then
 fi
 
 # Install
-mkdir -p $wkdir && tar -xf $HOME/dev-init.tar -C $wkdir
-mkdir -m a+w -p $wkdir/var/{log,tmp}
-touch $wkdir/var/log/127.0.0.1.{err,out}
-chown -R $sudoer:$sudoer $wkdir
-rm -f $HOME/{dev-init.tar,dev-installer}
+sudo -u $sudoer mkdir -p $wkdir
+sudo -u $sudoer tar -xf /tmp/dev-init.tar -C $wkdir
+sudo -u $sudoer mkdir -m a+w -p $wkdir/var/{log,tmp}
+sudo -u $sudoer touch $wkdir/var/log/127.0.0.1.{err,out}
+rm -f /tmp/{dev-init.tar,dev-installer}
+
+if [ ! -f $home/.bash_completion ]; then
+    sudo -u $sudoer touch $home/.bash_completion
+fi
+
+if [ -f $wkdir/lib/completion ]; then
+    grep -q "_dev_init_completion" $home/.bash_completion || \
+        cat $wkdir/lib/completion >> $home/.bash_completion
+fi

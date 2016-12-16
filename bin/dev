@@ -282,8 +282,8 @@ dev_deploy() {
         # It's will overwrite authorized_keys
         cat $glb_ssh_key.pub | dev_ssh $user@$host "$cmd"
         [ "$user" != "$sudoer" ] && dev_scp $glb_ssh_key $glb_ssh_key.pub $user@$host:\$HOME/.ssh
-        dev_scp $init_tar $glb_base/bin/dev-installer $user@$host:\$HOME
-        dev_ssh $user@$host "\$HOME/dev-installer $wkdir $sudoer"
+        dev_scp $init_tar $glb_base/bin/dev-installer $user@$host:/tmp
+        dev_ssh $user@$host "/tmp/dev-installer $wkdir $sudoer"
     done
 
     rm -f $init_tar
