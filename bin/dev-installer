@@ -12,29 +12,31 @@
 
 declare wkdir=$1 sudoer=$2 home="/root"
 
-if [ "$sudoer" != "root" ] && [ "$(whoami)" == "$sudoer" ]; then
+if [ "$sudoer" != "root" ]; then
     home="/home/$sudoer"
 
-    if ! getent passwd $sudoer; then
-        # Create sudoer
-        useradd --create-home $sudoer
-        echo "$sudoer:dev" | chpasswd
-        usermod -G wheel $sudoer
-    fi
+    if [ "$(whoami)" != "$sudoer" ]; then
+        if ! getent passwd $sudoer; then
+            # Create sudoer
+            useradd --create-home $sudoer
+            echo "$sudoer:dev" | chpasswd
+            usermod -G wheel $sudoer
+        fi
 
-    # No-password
-    if [ "$(whoami)" == "root" ]; then
-        mkdir -p /etc/sudoers.d
-        echo "$sudoer ALL=NOPASSWD: ALL" > /etc/sudoers.d/$sudoer-nopasswd
-    fi
+        # No-password
+        if [ "$(whoami)" == "root" ]; then
+            mkdir -p /etc/sudoers.d
+            echo "$sudoer ALL=NOPASSWD: ALL" > /etc/sudoers.d/$sudoer-nopasswd
+        fi
 
-    # Private and public key
-    if [ "$HOME" != "$home" ]; then
-        mkdir -m 700 -p $home/.ssh
-        cp $HOME/.ssh/id_rsa* $home/.ssh
-        cat $HOME/.ssh/id_rsa.pub > $home/.ssh/authorized_keys
-        chown -R $sudoer:$sudoer $home/.ssh
-        chmod 600 $home/.ssh/{authorized_keys,id_rsa*}
+        # Private and public key
+        if [ "$HOME" != "$home" ]; then
+            mkdir -m 700 -p $home/.ssh
+            cp $HOME/.ssh/id_rsa* $home/.ssh
+            cat $HOME/.ssh/id_rsa.pub > $home/.ssh/authorized_keys
+            chown -R $sudoer:$sudoer $home/.ssh
+            chmod 600 $home/.ssh/{authorized_keys,id_rsa*}
+        fi
     fi
 fi
 
@@ -42,7 +44,7 @@ fi
 sudo -u $sudoer mkdir -p $wkdir
 sudo -u $sudoer tar -xf /tmp/dev-init.tar -C $wkdir
 sudo -u $sudoer mkdir -m a+w -p $wkdir/var/{log,tmp}
-[ ! -f "$wkdir/var/log/127.0.0.1.{err,out}" ] && sudo -u $sudoer touch $wkdir/var/log/127.0.0.1.{err,out}
+[ ! -f "$wkdir/var/log/127.0.0.1.out" ] && sudo -u $sudoer touch $wkdir/var/log/127.0.0.1.out
 rm -f /tmp/{dev-init.tar,dev-installer}
 
 if [ ! -f $home/.bash_completion ]; then

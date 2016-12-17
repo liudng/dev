@@ -102,24 +102,18 @@ opa_rem[node]=""
 opa_als[n]="node"
 opa_fun_node() {
     [ -z "$1" ] && echo "Usage: dev --node <host>" >&2 && return 0
+
+    if [ "$1" == "all" ]; then
+        declare host
+        for host in "${!cfg_nodes[@]}"; do
+            glb_run_nodes[$host]="${cfg_nodes[$host]}"
+        done
+        return 1
+    fi
+
     [ -z "${cfg_nodes[$1]}" ] && echo "Node not found: $1" >&2 && return 1
     glb_run_nodes[$1]="${cfg_nodes[$1]}"
     return 1
-}
-
-#
-# Usage:
-#     dev -a
-#     dev --all
-#
-opa_rem[all]="Runs on all of the available nodes"
-opa_als[a]="all"
-opa_fun_all() {
-    declare host
-    for host in "${!cfg_nodes[@]}"; do
-        glb_run_nodes[$host]="${cfg_nodes[$host]}"
-    done
-    return 0
 }
 
 #
