@@ -209,3 +209,15 @@ opa_fun_version() {
     echo "dev version $glb_version"
     return 0
 }
+
+#
+# Usage:
+#     dev --dest <prj>
+#
+opa_rem[dest]="Destination"
+opa_als[dest]="dest"
+opa_fun_dest() {
+    [ -z "$1" ] && echo "Usage: dev --dest <prj>" >&2 && return 0
+    [ -z "${cfg_projects[$1]}" ] && echo "Project $1 not exists" >&2 && return 1
+    glb_dest="${cfg_projects[$1]}" && return 1
+}

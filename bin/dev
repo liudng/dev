@@ -40,7 +40,7 @@ declare glb_version="1.2"
 declare -g glb_run=1 glb_run_dry=0 glb_run_compact=0 glb_run_sudo=0 glb_run_daemon=0
 
 # Command file
-declare -g glb_file glb_func glb_argv glb_user
+declare -g glb_file glb_func glb_argv glb_user glb_dest
 
 # For option arguments
 declare -Ag glb_run_nodes opa_rem opa_als
@@ -522,6 +522,8 @@ dev_main() {
         # The default project is dev
         dev_prj || true
     fi
+
+    [ -z "$glb_dest" ] && glb_dest=$glb_wkdir
 
     dev_real_run "$@"
 }
