@@ -64,6 +64,19 @@ opa_fun_deploy() {
 
 #
 # Usage:
+#     dev --rsync [prj]
+#
+opa_rem[rsync]=""
+opa_als[rsync]="rsync"
+opa_fun_rsync() {
+    dev_run 2 || return 1
+    dev_func "dev_rsync" || return 1
+    [ -z "$1" ] && glb_argv="dev" || glb_argv="$1"
+    return 1
+}
+
+#
+# Usage:
 #     dev --init <prj>
 #
 opa_rem[init]="Create a new project directory structure"
@@ -159,7 +172,7 @@ opa_fun_xtrace() {
 # Usage:
 #     dev --user <user>
 #
-opa_rem[user]="Run a command with substitute user"
+opa_rem[user]=""
 opa_als[user]="user"
 opa_fun_user() {
     [ -z "$1" ] && echo "Usage: dev --user <user>" >&2 && return 0

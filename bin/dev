@@ -30,7 +30,7 @@ set -o pipefail
 # set -e : exit the script if any statement returns a non-true return value
 set -o errexit
 
-declare glb_version="1.2"
+declare glb_version="1.2.1"
 
 # Run-state:
 # 0:Not-run(readonly)
@@ -291,6 +291,39 @@ dev_deploy() {
 
 #
 # Usage:
+#     dev_rsync
+#
+dev_rsync() {
+    [ -z "$glb_argv" ] && echo "Usage: dev --rsync <prj>" >&2 && return 1
+    [ "${#glb_run_nodes[@]}" -le 0 ] && echo "Nodes is empty" >&2 && return 1
+
+    declare user host wkdir
+
+    if [ "$glb_argv" == "dev" ]; then
+        wkdir="$glb_base"
+    elif [ ! -z "${cfg_projects[$glb_argv]}" ]; then
+        wkdir="${cfg_projects[$glb_argv]}"
+    else
+        echo "Project $glb_argv not exists" >&2 && return 1
+    fi
+
+    for host in "${!glb_run_nodes[@]}"; do
+        user="${glb_run_nodes[$host]}"
+
+        # -e to specify ssh instead of the default.
+        # rsync -aprzv -e ssh --include '*/' --include='*.class' --exclude='*' . server:/path
+
+        # -a, --archive               archive mode; equals -rlptgoD (no -H,-A,-X)
+        # -p, --perms                 preserve permissions
+        # -r, --recursive             recurse into directories
+        # -z, --compress              compress file data during the transfer
+        rsync -prv --exclude-from=$glb_base/etc/rsync.excludes $wkdir $user@$host:$(dirname $wkdir)
+    done
+}
+
+
+#
+# Usage:
 #     dev_base
 #
 dev_base() {
@@ -367,6 +400,11 @@ dev_func() {
 
 #
 # Set run state
+# Run-state:
+# 0:Not-run(readonly)
+# 1:Run(alterable,local,default)
+# 2:Run(readonly,local)
+# 3:Run(readonly,remote)
 #
 dev_run() {
     if [[ "$glb_run" -eq 1 ]]; then

@@ -1,0 +1,4 @@
+.git
+var/log/*
+var/tmp/*
+*.sublime-*
