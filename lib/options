@@ -54,67 +54,67 @@ opa_fun_completion() {
 # Usage:
 #     dev --deploy [prj]
 #
-opa_rem[deploy]="Remote deployment"
-opa_als[deploy]="deploy"
-opa_fun_deploy() {
-    dev_run 2 || return $#
-    dev_func "dev_deploy" || return $#
-    [ -z "$1" ] && glb_argv="" && return 0 || glb_argv="$1" && return 1
-}
+# opa_rem[deploy]="Remote deployment"
+# opa_als[deploy]="deploy"
+# opa_fun_deploy() {
+#     dev_run 2 || return $#
+#     dev_func "dev_deploy" || return $#
+#     [ -z "$1" ] && glb_argv="" && return 0 || glb_argv="$1" && return 1
+# }
 
 #
 # Usage:
 #     dev --rsync [prj]
 #
-opa_rem[rsync]=""
-opa_als[rsync]="rsync"
-opa_fun_rsync() {
-    dev_run 2 || return 1
-    dev_func "dev_rsync" || return 1
-    [ -z "$1" ] && glb_argv="dev" || glb_argv="$1"
-    return 1
-}
+# opa_rem[rsync]=""
+# opa_als[rsync]="rsync"
+# opa_fun_rsync() {
+#     dev_run 2 || return 1
+#     dev_func "dev_rsync" || return 1
+#     [ -z "$1" ] && glb_argv="dev" || glb_argv="$1"
+#     return 1
+# }
 
 #
 # Usage:
 #     dev --init <prj>
 #
-opa_rem[init]="Create a new project directory structure"
-opa_als[init]="init"
-opa_fun_init() {
-    dev_run 0 || return $#
+# opa_rem[init]="Create a new project directory structure"
+# opa_als[init]="init"
+# opa_fun_init() {
+#     dev_run 0 || return $#
 
-    [ -z "$1" ] && echo "Usage: dev --init <prj>" >&2 && return 0
+#     [ -z "$1" ] && echo "Usage: dev --init <prj>" >&2 && return 0
 
-    declare prj="$1" wkdir="${cfg_projects[$1]}"
+#     declare prj="$1" wkdir="${cfg_projects[$1]}"
 
-    [ "$prj" = "dev" ] && echo "Project dev no need init" >&2 && return 1
-    [ -z "$wkdir" ] && echo "Config error: cfg_projects[$prj], in $glb_base/etc/dev.conf" >&2 && return 1
-    [ -d $wkdir/bin ] || [ -d $wkdir/cmd ] && echo "Project $prj exists" >&2 && return 1
+#     [ "$prj" = "dev" ] && echo "Project dev no need init" >&2 && return 1
+#     [ -z "$wkdir" ] && echo "Config error: cfg_projects[$prj], in $glb_base/etc/dev.conf" >&2 && return 1
+#     [ -d $wkdir/bin ] || [ -d $wkdir/cmd ] && echo "Project $prj exists" >&2 && return 1
 
-    mkdir -p \
-        $wkdir/bin \
-        $wkdir/cmd \
-        $wkdir/etc/cmd \
-        $wkdir/lib \
-        $wkdir/var/log \
-        $wkdir/var/misc \
-        $wkdir/var/pkg \
-        $wkdir/var/tmp
+#     mkdir -p \
+#         $wkdir/bin \
+#         $wkdir/cmd \
+#         $wkdir/etc/cmd \
+#         $wkdir/lib \
+#         $wkdir/var/log \
+#         $wkdir/var/misc \
+#         $wkdir/var/pkg \
+#         $wkdir/var/tmp
 
-    [ -f $wkdir/lib/bootstrap ] || touch $wkdir/lib/bootstrap
+#     [ -f $wkdir/lib/bootstrap ] || touch $wkdir/lib/bootstrap
 
-    return 1
-}
+#     return 1
+# }
 
 #
 # Usage:
-#     dev --node <host>
+#     dev --target <host>
 #
-opa_rem[node]=""
-opa_als[n]="node"
-opa_fun_node() {
-    [ -z "$1" ] && echo "Usage: dev --node <host>" >&2 && return 0
+opa_rem[target]=""
+opa_als[t]="target"
+opa_fun_target() {
+    [ -z "$1" ] && echo "Usage: dev --target <host>" >&2 && return 0
 
     if [ "$1" == "all" ]; then
         declare host
@@ -188,26 +188,6 @@ opa_rem[dry-run]="Only report what would be done"
 opa_als[dry-run]="dry-run"
 opa_fun_dry_run() {
     glb_run_dry=1
-    return 0
-}
-
-#
-# Usage:
-#     dev --passwd
-#
-opa_rem[passwd]="Console Password Manager"
-opa_als[passwd]="passwd"
-opa_fun_passwd() {
-    return 0
-}
-
-#
-# Usage:
-#     dev --repos
-#
-opa_rem[repos]="Multiple SCM repository management tool"
-opa_als[repos]="repos"
-opa_fun_repos() {
     return 0
 }
 

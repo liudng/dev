@@ -30,7 +30,7 @@ set -o pipefail
 # set -e : exit the script if any statement returns a non-true return value
 set -o errexit
 
-declare glb_version="1.2.1"
+declare glb_version="1.3"
 
 # Run-state:
 # 0:Not-run(readonly)
@@ -248,79 +248,6 @@ dev_completion() {
     echo "${ret:1}"
 }
 
-#
-# Usage:
-#     dev_deploy
-#
-dev_deploy() {
-    declare wkdir
-
-    [ -z "$glb_argv" ] || [ "$glb_argv" == "dev" ] && wkdir="$glb_wkdir" || wkdir="${cfg_projects[$glb_argv]}"
-    [ -z "$wkdir" ] && echo "Config error in $glb_base/etc/dev.conf" >&2 && return 1
-    [ "${#glb_run_nodes[@]}" -le 0 ] && echo "Nodes is empty" >&2 && return 1
-
-    declare cmd user host sudoer init_tar=/tmp/dev-init.tar
-
-    cmd="mkdir -m 700 -p \$HOME/.ssh &&"
-    cmd="$cmd cat > \$HOME/.ssh/authorized_keys &&"
-    cmd="$cmd chmod 600 \$HOME/.ssh/authorized_keys"
-
-    [ -f $init_tar ] && rm -f $init_tar
-
-    cd $wkdir
-    tar --exclude='./dev-init.tar' \
-        --exclude='./*.sublime-*' \
-        --exclude='./var/log' \
-        --exclude='./var/tmp' \
-        -cf $init_tar .
-
-    for host in "${!glb_run_nodes[@]}"; do
-        sudoer="${glb_run_nodes[$host]}"
-        [ -z "$glb_user" ] && user="$sudoer" || user="$glb_user"
-
-        # public key, remotely write to a file using SSH
-        # It's will overwrite authorized_keys
-        cat $glb_ssh_key.pub | dev_ssh $user@$host "$cmd"
-        [ "$user" != "$sudoer" ] && dev_scp $glb_ssh_key $glb_ssh_key.pub $user@$host:\$HOME/.ssh
-        dev_scp $init_tar $glb_base/bin/dev-installer $user@$host:/tmp
-        dev_ssh $user@$host "/tmp/dev-installer $wkdir $sudoer"
-    done
-
-    rm -f $init_tar
-}
-
-#
-# Usage:
-#     dev_rsync
-#
-dev_rsync() {
-    [ -z "$glb_argv" ] && echo "Usage: dev --rsync <prj>" >&2 && return 1
-    [ "${#glb_run_nodes[@]}" -le 0 ] && echo "Nodes is empty" >&2 && return 1
-
-    declare user host wkdir
-
-    if [ "$glb_argv" == "dev" ]; then
-        wkdir="$glb_base"
-    elif [ ! -z "${cfg_projects[$glb_argv]}" ]; then
-        wkdir="${cfg_projects[$glb_argv]}"
-    else
-        echo "Project $glb_argv not exists" >&2 && return 1
-    fi
-
-    for host in "${!glb_run_nodes[@]}"; do
-        user="${glb_run_nodes[$host]}"
-
-        # -e to specify ssh instead of the default.
-        # rsync -aprzv -e ssh --include '*/' --include='*.class' --exclude='*' . server:/path
-
-        # -a, --archive               archive mode; equals -rlptgoD (no -H,-A,-X)
-        # -p, --perms                 preserve permissions
-        # -r, --recursive             recurse into directories
-        # -z, --compress              compress file data during the transfer
-        rsync -prv --exclude-from=$glb_base/etc/rsync.excludes $wkdir $user@$host:$(dirname $wkdir)
-    done
-}
-
 
 #
 # Usage:
@@ -348,10 +275,10 @@ dev_base() {
 
 #
 # Usage:
-#     dev_project <prj>
+#     dev_prj <prj>
 #
 dev_prj() {
-    [ ! -z "$glb_prj"] && return 1
+    [[ ! -z "$glb_prj" || $# -le 0 || "${1:0:1}" == "-" ]] && return 1
 
     if [ "$1" == "dev" ]; then
         declare -gr glb_prj="dev" glb_wkdir=$glb_base; return 0
@@ -367,10 +294,10 @@ dev_prj() {
 #
 # Prepare command files
 # Usage:
-#     dev_cmd <cmd-file> <cmd-func>
+#     dev_file <cmd-file>
 #
-dev_cmd() {
-    [ ! -z "$glb_func"] && return 1
+dev_file() {
+    [ ! -z "$glb_file"] && return 1
 
     if [[ $# -le 0 || -z "$1" ]]; then
         dev_help_usage >&2; dev_help_options >&2; dev_help_projects >&2; return 1
@@ -380,11 +307,7 @@ dev_cmd() {
         echo "Command file not found: $glb_wkdir/cmd/$1.sh" >&2; return 1
     fi
 
-    if [[ $# -eq 1 || -z "$2" ]]; then
-        echo "Missing command function" >&2; echo >&2; dev_help_projects $@ >&2; return 1
-    fi
-
-    glb_file="$1"; glb_func="$2"; return 0
+    glb_file="$1"; return 0
 }
 
 #
@@ -393,9 +316,20 @@ dev_cmd() {
 dev_func() {
     if [ ! -z "$glb_func" ]; then
         echo "Error: \$glb_func has a value: $glb_func" >&2; return 1
-    else
-        glb_func="$1"
     fi
+
+    if [[ $# -le 0 || -z "$1" ]]; then
+        echo "Missing command function" >&2; echo >&2; dev_help_projects $@ >&2; return 1
+    fi
+
+    declare func=${1/-/_}
+
+    [[ "${func:0:4}" == "cmd_" || -z "$glb_file" ]] || func="cmd_$func"
+    if [[ "$(declare -F $func)" != "$func" ]]; then
+        echo "Command not found: $func" >&2; return 1
+    fi
+
+    glb_func="$func"
 }
 
 #
@@ -424,27 +358,6 @@ dev_load_files() {
     [ -f $wkdir/etc/dev.cmd/$cf.conf ] && . $wkdir/etc/dev.cmd/$cf.conf
     [ -f $wkdir/cmd/$cf.var ] && . $wkdir/cmd/$cf.var
     [ ! -f $wkdir/cmd/$cf.sh ] && return 1 || . $wkdir/cmd/$cf.sh
-}
-
-#
-# Execute the command
-# Usage:
-#     dev_real_run <cmd-file> <cmd-func> [cmd-args]
-#
-dev_real_run() {
-    declare cmd="" func=${glb_func/-/_}
-
-    [[ "${func:0:4}" == "cmd_" || -z "$glb_file" ]] || func="cmd_$func"
-    if [[ "$(declare -F $func)" != "$func" ]]; then
-        echo "Command not found: $func" >&2; return 1
-    fi
-
-    if [[ $glb_run -le 2 ]]; then
-        # Run in local machine
-        dev_exec_local $func $@
-    else
-        dev_exec_remote $glb_base/bin/dev $glb_prj $glb_file $func $@
-    fi
 }
 
 #
@@ -521,6 +434,9 @@ dev_exec() {
 dev_main() {
     declare opt func args argv shft
 
+    # Porject name and working directory
+    dev_prj $@ && shift
+
     # Prepare optional arguments
     while true ; do
         opt=""; argv=""; shft="true"
@@ -555,7 +471,9 @@ dev_main() {
 
     if [ -z "$glb_func" ]; then
         [[ "$glb_run" -ge 1 && "${#glb_run_nodes[@]}" -gt 0 ]] && glb_run="3"
-        dev_prj $@ && shift; dev_cmd $@ || return 1; shift 2
+        dev_prj $@ && shift
+        dev_file $@ && shift || return 1
+        dev_func $@ && shift || return 1
     else
         # The default project is dev
         dev_prj || true
@@ -563,7 +481,12 @@ dev_main() {
 
     [ -z "$glb_dest" ] && glb_dest=$glb_wkdir
 
-    dev_real_run "$@"
+    if [[ $glb_run -le 2 ]]; then
+        # Run in local machine
+        dev_exec_local $glb_func $@
+    else
+        dev_exec_remote $glb_base/bin/dev $glb_prj $glb_file $glb_func $@
+    fi
 }
 
 # Call to main function. custom function declare before here.
