@@ -1,3 +1,4 @@
-bin/demo
-etc/dev.conf
-*.sublime-*
+/bin/demo
+/etc/dev.conf
+/*.sublime-*
+/tags

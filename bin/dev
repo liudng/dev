@@ -14,8 +14,8 @@
 # opa_fun_xxx: Optional arguments function.
 #
 # cfg_xxx: Configurations, declared in config file(readonly).
-# cmd_xxx: Command function, declared in xxx.cmd files by user.
-# xxx: Local varialbes, declared in xxx.cmd files by user. Declare
+# cmd_xxx: Command function, declared in xxx.sh files by user.
+# xxx: Local varialbes, declared in xxx.sh files by user. Declare
 #      function-specific variables with local. Declaration and assignment
 #      should be on different lines. for example:
 #          local file
@@ -149,8 +149,8 @@ dev_cmd_files() {
     for i in $(ls $1); do
         if [[ -d $1/$i ]]; then
             dev_cmd_files $1/$i $i/
-        elif [[ "${i: -4}" == ".cmd" ]]; then
-            echo "$2${i:0:-4}"
+        elif [[ "${i: -3}" == ".sh" ]]; then
+            echo "$2${i:0:-3}"
         fi
     done
 }
@@ -377,7 +377,7 @@ dev_cmd() {
     fi
 
     if ! dev_load_files $glb_wkdir $1; then
-        echo "Command file not found: $glb_wkdir/cmd/$1.cmd" >&2; return 1
+        echo "Command file not found: $glb_wkdir/cmd/$1.sh" >&2; return 1
     fi
 
     if [[ $# -eq 1 || -z "$2" ]]; then
@@ -423,7 +423,7 @@ dev_load_files() {
     [ -f $wkdir/lib/bootstrap ] && . $wkdir/lib/bootstrap
     [ -f $wkdir/etc/dev.cmd/$cf.conf ] && . $wkdir/etc/dev.cmd/$cf.conf
     [ -f $wkdir/cmd/$cf.var ] && . $wkdir/cmd/$cf.var
-    [ ! -f $wkdir/cmd/$cf.cmd ] && return 1 || . $wkdir/cmd/$cf.cmd
+    [ ! -f $wkdir/cmd/$cf.sh ] && return 1 || . $wkdir/cmd/$cf.sh
 }
 
 #
