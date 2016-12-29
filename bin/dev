@@ -464,10 +464,16 @@ dev_main() {
         if [[ "$(declare -F $func)" == "$func" ]]; then
             $func $argv || $shft
         fi
+
+        # For completion
+        if [ "$opt" == "completion" ]; then
+            dev_prj $@ && shift
+        fi
     done
 
     # Do command function
     [ $glb_run -lt 1 ] && return 0
+    [ ! -z "$glb_prj" ] && declare -gr glb_new=1 || declare -gr glb_new=0
 
     if [ -z "$glb_func" ]; then
         [[ "$glb_run" -ge 1 && "${#glb_run_nodes[@]}" -gt 0 ]] && glb_run="3"
@@ -476,14 +482,18 @@ dev_main() {
         dev_func $@ && shift || return 1
     else
         # The default project is dev
-        dev_prj || true
+        dev_prj dev || true
     fi
 
     [ -z "$glb_dest" ] && glb_dest=$glb_wkdir
 
     if [[ $glb_run -le 2 ]]; then
         # Run in local machine
-        dev_exec_local $glb_func $@
+        if [[ $glb_new -eq 1 && "$glb_func" == "dev_completion" ]]; then
+            dev_exec_local $glb_func $glb_prj $@
+        else
+            dev_exec_local $glb_func $@
+        fi
     else
         dev_exec_remote $glb_base/bin/dev $glb_prj $glb_file $glb_func $@
     fi

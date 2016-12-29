@@ -4,14 +4,14 @@
 # Usage:
 #     dev_deploy
 #
-cmd_do() {
+cmd_deploy() {
     declare wkdir
 
     [ -z "$glb_argv" ] || [ "$glb_argv" == "dev" ] && wkdir="$glb_wkdir" || wkdir="${cfg_projects[$glb_argv]}"
     [ -z "$wkdir" ] && echo "Config error in $glb_base/etc/dev.conf" >&2 && return 1
     [ "${#glb_run_nodes[@]}" -le 0 ] && echo "Nodes is empty" >&2 && return 1
 
-    declare cmd user host sudoer init_tar=/tmp/dev-init.tar
+    declare cmd user host sudoer init_tar=/tmp/devinit.tar
 
     cmd="mkdir -m 700 -p \$HOME/.ssh &&"
     cmd="$cmd cat > \$HOME/.ssh/authorized_keys &&"
@@ -20,7 +20,7 @@ cmd_do() {
     [ -f $init_tar ] && rm -f $init_tar
 
     cd $wkdir
-    tar --exclude='./dev-init.tar' \
+    tar --exclude='./devinit.tar' \
         --exclude='./*.sublime-*' \
         --exclude='./var/log' \
         --exclude='./var/tmp' \
@@ -34,8 +34,8 @@ cmd_do() {
         # It's will overwrite authorized_keys
         cat $glb_ssh_key.pub | dev_ssh $user@$host "$cmd"
         [ "$user" != "$sudoer" ] && dev_scp $glb_ssh_key $glb_ssh_key.pub $user@$host:\$HOME/.ssh
-        dev_scp $init_tar $glb_base/bin/dev-installer $user@$host:/tmp
-        dev_ssh $user@$host "/tmp/dev-installer $wkdir $sudoer"
+        dev_scp $init_tar $glb_base/bin/devinstaller $user@$host:/tmp
+        dev_ssh $user@$host "/tmp/devinstaller $wkdir $sudoer"
     done
 
     rm -f $init_tar

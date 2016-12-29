@@ -5,12 +5,12 @@
 
 #
 # Usage:
-#     dev-installer <wkdir> <sudoer>
+#     devinstaller <prj> <wkdir> <sudoer>
 #
 
-[ $# -lt 2 ] && echo "Usage: dev-installer <wkdir> <sudoer>" >&2 && exit 1
+[ $# -lt 3 ] && echo "Usage: devinstaller <prj> <wkdir> <sudoer>" >&2 && exit 1
 
-declare wkdir=$1 sudoer=$2 home="/root"
+declare prj=$1 wkdir=$2 sudoer=$3 home="/root"
 
 if [ "$sudoer" != "root" ]; then
     home="/home/$sudoer"
@@ -41,11 +41,11 @@ if [ "$sudoer" != "root" ]; then
 fi
 
 # Install
-sudo -u $sudoer mkdir -p $wkdir
-sudo -u $sudoer tar -xf /tmp/dev-init.tar -C $wkdir
+sudo -u $sudoer mkdir -p $wkdir $home/.local/bin
+sudo -u $sudoer tar -xf /tmp/devinit.tar -C $wkdir
 sudo -u $sudoer mkdir -m a+w -p $wkdir/var/{log,tmp}
 [ ! -f "$wkdir/var/log/127.0.0.1.out" ] && sudo -u $sudoer touch $wkdir/var/log/127.0.0.1.out
-rm -f /tmp/{dev-init.tar,dev-installer}
+rm -f /tmp/{devinit.tar,devinstaller}
 
 if [ ! -f $home/.bash_completion ]; then
     sudo -u $sudoer touch $home/.bash_completion
@@ -55,3 +55,7 @@ if [ -f $wkdir/lib/completion ]; then
     grep -q "_dev_init_completion" $home/.bash_completion || \
         cat $wkdir/lib/completion >> $home/.bash_completion
 fi
+
+[ ! -L $home/.local/bin/$prj ] && ln -s $wkdir/bin/$prj $home/.local/bin/$prj
+
+echo "devinstaller is done."
