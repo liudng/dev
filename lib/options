@@ -14,98 +14,14 @@ opa_fun_help() {
         dev_run 0 || return 0
         dev_help_usage
         dev_help_options
-        # dev_help_projects
         return 0
     else
         dev_run 0 || return 1
         dev_help_usage "$1"
         dev_help_options
-        # dev_help_projects
         return 1
     fi
 }
-
-#
-# Usage:
-#     dev --options
-#
-# opa_rem[options]="List all optional arguments"
-# opa_als[options]="options"
-# opa_fun_options() {
-#     dev_run 0 || return 0
-#     dev_options
-#     return 0
-# }
-
-#
-# Usage:
-#     dev --completion <cur>
-#
-# opa_rem[completion]="List all command files or functions"
-# opa_als[completion]="completion"
-# opa_fun_completion() {
-#     glb_run_compact=1
-#     dev_run 2 || return $#
-#     dev_func "dev_completion" || return $#
-#     [ -z "$1" ] && glb_argv="" && return 0 || glb_argv="$1" && return 1
-# }
-
-#
-# Usage:
-#     dev --deploy [prj]
-#
-# opa_rem[deploy]="Remote deployment"
-# opa_als[deploy]="deploy"
-# opa_fun_deploy() {
-#     dev_run 2 || return $#
-#     dev_func "dev_deploy" || return $#
-#     [ -z "$1" ] && glb_argv="" && return 0 || glb_argv="$1" && return 1
-# }
-
-#
-# Usage:
-#     dev --rsync [prj]
-#
-# opa_rem[rsync]=""
-# opa_als[rsync]="rsync"
-# opa_fun_rsync() {
-#     dev_run 2 || return 1
-#     dev_func "dev_rsync" || return 1
-#     [ -z "$1" ] && glb_argv="dev" || glb_argv="$1"
-#     return 1
-# }
-
-#
-# Usage:
-#     dev --init <prj>
-#
-# opa_rem[init]="Create a new project directory structure"
-# opa_als[init]="init"
-# opa_fun_init() {
-#     dev_run 0 || return $#
-
-#     [ -z "$1" ] && echo "Usage: dev --init <prj>" >&2 && return 0
-
-#     declare prj="$1" wkdir="${cfg_projects[$1]}"
-
-#     [ "$prj" = "dev" ] && echo "Project dev no need init" >&2 && return 1
-#     [ -z "$wkdir" ] && echo "Config error: cfg_projects[$prj], in $glb_base/etc/dev.conf" >&2 && return 1
-#     [ -d $wkdir/bin ] || [ -d $wkdir/cmd ] && echo "Project $prj exists" >&2 && return 1
-
-#     mkdir -p \
-#         $wkdir/bin \
-#         $wkdir/cmd \
-#         $wkdir/etc/cmd \
-#         $wkdir/lib \
-#         $wkdir/var/log \
-#         $wkdir/var/misc \
-#         $wkdir/var/pkg \
-#         $wkdir/var/tmp
-
-#     [ -f $wkdir/lib/bootstrap ] || touch $wkdir/lib/bootstrap
-
-#     return 1
-# }
 
 #
 # Usage:
@@ -136,7 +52,7 @@ opa_fun_target() {
 opa_rem[daemon]="Run a command immune to hangups, with output to a non-tty"
 opa_als[daemon]="daemon"
 opa_fun_daemon() {
-    [ "$glb_func" != "dev_completion" ] && glb_run_daemon=1
+    glb_run_daemon=1
     return 0
 }
 
@@ -148,7 +64,7 @@ opa_fun_daemon() {
 opa_rem[sudo]="Execute a command as another user"
 opa_als[u]="sudo"
 opa_fun_sudo() {
-    [ "$glb_run_compact" -eq 0 ] && glb_run_sudo=1
+    glb_run_sudo=1
     return 0
 }
 
@@ -160,9 +76,6 @@ opa_rem[xtrace]="Print command traces before executing command"
 opa_als[xtrace]="xtrace"
 opa_fun_xtrace() {
     set -o xtrace
-
-    # trap 'echo "# $BASH_COMMAND"' DEBUG
-
     # Prints shell input lines as they are read
     # set -o verbose
     return 0

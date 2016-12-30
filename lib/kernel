@@ -10,7 +10,7 @@ declare glb_version="1.3"
 # 1:Run(alterable,local,default)
 # 2:Run(readonly,local)
 # 3:Run(readonly,remote)
-declare -g glb_run=1 glb_run_dry=0 glb_run_compact=0 glb_run_sudo=0 glb_run_daemon=0
+declare -g glb_run=1 glb_run_dry=0 glb_run_sudo=0 glb_run_daemon=0
 
 # Command file
 declare -g glb_file glb_func glb_argv glb_user glb_dest
@@ -58,28 +58,31 @@ dev_help_options_items() {
 
 #
 # Usage:
-#     dev_help_projects [cmd-file]
+#     dev_help_projects
 #
 dev_help_projects() {
-    declare prj ret wkdir
-    if [[ $# -le 0 && "$glb_prj" == "dev" ]]; then
-        echo "These are the all aviliable <prj>s:"; echo
-        # List all projects
-        for prj in "${!cfg_projects[@]}"; do
-            ret="$ret $prj"
-        done
-        echo ${ret:1} |tr " " "\n" |column -c $(tput cols) |fmt; echo
+    declare ret prj wkdir
 
-        # List files in dev project
-        dev_help_files $glb_base; return 0
+    if [ "$glb_prj" == "dev" ]; then
+        wkdir=$glb_base
+        if [ -z $glb_file ]; then
+            # List all projects
+            echo "These are the all aviliable <prj>s:"; echo
+            for prj in "${!cfg_projects[@]}"; do
+                ret="$ret $prj"
+            done
+            echo ${ret:1} |tr " " "\n" |column -c $(tput cols) |fmt; echo
+        fi
+    else
+        wkdir=$glb_wkdir
     fi
 
-    if [[ $# -le 0 ]]; then
-        # List all cmd-file
-        dev_help_files $glb_wkdir
+    if [ -z $glb_file ]; then
+        # List files in project
+        dev_help_files $wkdir
     else
         # List all cmd-func
-        dev_help_functions $glb_wkdir $1
+        dev_help_functions $wkdir $1
     fi
 }
 
@@ -101,9 +104,8 @@ dev_help_files() {
 # List all functions of included <cmd-file>s.
 #
 dev_help_functions() {
-    declare wkdir cf
+    declare wkdir
     [ -z "$1" ] && wkdir="$glb_wkdir" || wkdir="$1"
-    [ -z "$2" ] && cf="$glb_file" || cf="$2"
     echo "These are the all aviliable <cmd-func>s:"; echo
 
     for i in $(compgen -A function); do
@@ -113,6 +115,18 @@ dev_help_functions() {
     done
 
     echo
+}
+
+#
+# Usage:
+#     dev_load_files <prj> <cmd-file>
+#
+dev_load_files() {
+    declare wkdir="$1" cf="$2"
+    [ -f $wkdir/lib/bootstrap ] && . $wkdir/lib/bootstrap
+    [ -f $wkdir/etc/dev.cmd/$cf.conf ] && . $wkdir/etc/dev.cmd/$cf.conf
+    [ -f $wkdir/cmd/$cf.var ] && . $wkdir/cmd/$cf.var
+    [ ! -f $wkdir/cmd/$cf.sh ] && return 1 || . $wkdir/cmd/$cf.sh
 }
 
 #
@@ -169,12 +183,8 @@ dev_prj() {
         declare -gr glb_prj="dev" glb_wkdir=$glb_base; return 0
     fi
 
-    if [ $# -ge 1 ]; then
-        if [ -n "${cfg_projects[$1]+1}" ]; then
-			declare -gr glb_prj="$1" glb_wkdir=${cfg_projects[$1]}; return 0
-        else
-            echo "Project $1 not found" >&2
-        fi
+    if [ $# -ge 1 ] && [ -n "${cfg_projects[$1]+1}" ]; then
+        declare -gr glb_prj="$1" glb_wkdir=${cfg_projects[$1]}; return 0
     fi
 
 	declare -gr glb_prj="dev" glb_wkdir=$glb_base; return 1
@@ -189,7 +199,7 @@ dev_file() {
     [ ! -z "$glb_file"] && return 1
 
     if [[ $# -le 0 || -z "$1" ]]; then
-        dev_help_usage >&2; dev_help_options >&2; dev_help_projects >&2; return 1
+        dev_help_projects >&2; return 1
     fi
 
     if ! dev_load_files $glb_wkdir $1; then
@@ -208,7 +218,7 @@ dev_func() {
     fi
 
     if [[ $# -le 0 || -z "$1" ]]; then
-        echo "Missing command function" >&2; echo >&2; dev_help_projects $@ >&2; return 1
+        echo "Missing command function" >&2; echo >&2; dev_help_functions >&2; return 1
     fi
 
     declare func=${1/-/_}
@@ -237,17 +247,6 @@ dev_run() {
     fi
 }
 
-#
-# Usage:
-#     dev_load_files <prj> <cmd-file>
-#
-dev_load_files() {
-    declare wkdir="$1" cf="$2"
-    [ -f $wkdir/lib/bootstrap ] && . $wkdir/lib/bootstrap
-    [ -f $wkdir/etc/dev.cmd/$cf.conf ] && . $wkdir/etc/dev.cmd/$cf.conf
-    [ -f $wkdir/cmd/$cf.var ] && . $wkdir/cmd/$cf.var
-    [ ! -f $wkdir/cmd/$cf.sh ] && return 1 || . $wkdir/cmd/$cf.sh
-}
 
 #
 # Execute a command from all nodes.
@@ -299,11 +298,9 @@ dev_exec() {
 
     cmd="$@"
 
-    if [ $glb_run_compact -eq 0 ]; then
-        echo "$desc" >>$log_out
-        echo "$cmd"; echo "$cmd" >>$log_out
-        chmod a+wx $log_out
-    fi
+    echo "$desc" >>$log_out
+    echo "$cmd"; echo "$cmd" >>$log_out
+    chmod a+wx $log_out
 
     [ $glb_run_dry -eq 1 ] && return 0
 

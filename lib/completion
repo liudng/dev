@@ -3,7 +3,6 @@
 # devcompletion :cur <prj> [--options] <cmd-file>
 # devcompletion :cur [--options] <prj> <cmd-file>
 
-declare -g glb_cur
 
 #
 # Usage:
@@ -27,45 +26,32 @@ dev_options() {
 dev_completion() {
     declare ret key prj wkdir
 
-    [ $glb_pnf -ge 1 ] && return 0
-
+    # echo "glb_prj:$glb_prj" >&2
+    # echo "glb_wkdir:$glb_wkdir" >&2
     if [ "$glb_prj" == "dev" ]; then
         wkdir=$glb_base
-
         if [ -z $glb_file ]; then
             # List all projects
             for prj in "${!cfg_projects[@]}"; do
                 ret="$ret $prj"
             done
-            # List files in dev project
-            ret="$ret $(dev_cmd_files $glb_base/cmd | tr '\n' ' ')"
-            echo "${ret:1}"; return 0
-        else
-            # List all cmd-func
-            dev_load_files $wkdir $glb_file
-            for key in $(compgen -A function); do
-                [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
-            done
-            echo "${ret:1}"; return 0
         fi
     else
         wkdir=$glb_wkdir
-
-        if [ -z $glb_file ]; then
-            # List files in project
-            ret="$ret $(dev_cmd_files $wkdir/cmd | tr '\n' ' ')"
-            echo "${ret:1}"; return 0
-        else
-            # List all cmd-func
-            dev_load_files $wkdir $glb_file
-            for key in $(compgen -A function); do
-                [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
-            done
-            echo "${ret:1}"; return 0
-        fi
     fi
 
-    echo "${ret:1}" return 0
+    if [ -z $glb_file ]; then
+        # List files in project
+        ret="$ret $(dev_cmd_files $wkdir/cmd | tr '\n' ' ')"
+    else
+        # List all cmd-func
+        [ -f $wkdir/cmd/$glb_file.sh ] && . $wkdir/cmd/$glb_file.sh
+        for key in $(compgen -A function); do
+            [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
+        done
+    fi
+
+    echo "${ret:1}"; return 0
 }
 
 #
@@ -75,8 +61,8 @@ dev_completion() {
 #
 dev_main() {
     # cur
-    glb_cur="${1:1}" && shift
-    [ "${glb_cur:0:1}" == "-" ] && dev_options && return 0
+    declare cur="${1:1}" && shift
+    [ "${cur:0:1}" == "-" ] && dev_options && return 0
 
     # Porject name and working directory
     if [ "${1:0:1}" != "-" ]; then

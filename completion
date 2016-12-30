@@ -26,7 +26,7 @@
 _dev_init_completion() {
     # Pointer to current completion word.
     # By convention, it's named "cur" but this isn't strictly necessary.
-    local prj cur prev opts
+    local cur prev opts
 
     COMPREPLY=() # Array variable storing the possible completions.
     cur=${COMP_WORDS[COMP_CWORD]}
@@ -34,9 +34,10 @@ _dev_init_completion() {
 
     declare arr=(${COMP_WORDS[@]})
     unset arr[COMP_CWORD]
+    [ "${arr[0]}" == "dev" ] && unset arr[0]
     # echo "cur:$cur" >&2
     # echo "arr:${arr[@]:1}" >&2
-    opts=$(dev :completion ":$cur" "${arr[@]:1}" 2>/dev/null) #
+    opts=$(dev :completion ":$cur" "${arr[@]}" 2>/dev/null) #
 
     COMPREPLY=( $(compgen -W "$opts" -- "$cur" ) );
 }
