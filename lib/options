@@ -29,26 +29,26 @@ opa_fun_help() {
 # Usage:
 #     dev --options
 #
-opa_rem[options]="List all optional arguments"
-opa_als[options]="options"
-opa_fun_options() {
-    dev_run 0 || return 0
-    dev_options
-    return 0
-}
+# opa_rem[options]="List all optional arguments"
+# opa_als[options]="options"
+# opa_fun_options() {
+#     dev_run 0 || return 0
+#     dev_options
+#     return 0
+# }
 
 #
 # Usage:
 #     dev --completion <cur>
 #
-opa_rem[completion]="List all command files or functions"
-opa_als[completion]="completion"
-opa_fun_completion() {
-    glb_run_compact=1
-    dev_run 2 || return $#
-    dev_func "dev_completion" || return $#
-    [ -z "$1" ] && glb_argv="" && return 0 || glb_argv="$1" && return 1
-}
+# opa_rem[completion]="List all command files or functions"
+# opa_als[completion]="completion"
+# opa_fun_completion() {
+#     glb_run_compact=1
+#     dev_run 2 || return $#
+#     dev_func "dev_completion" || return $#
+#     [ -z "$1" ] && glb_argv="" && return 0 || glb_argv="$1" && return 1
+# }
 
 #
 # Usage:

@@ -1,44 +1,121 @@
 #!/bin/sh
-# Copyright 2016 The dev Authors. All rights reserved.
-# Use of this source code is governed by a BSD-style
-# license that can be found in the LICENSE file.
 
+# devcompletion :cur <prj> [--options] <cmd-file>
+# devcompletion :cur [--options] <prj> <cmd-file>
 
-# COMPREPLY: array holds the completion results that gets displayed after
-#             pressing [TAB][TAB]
-#
-# COMP_WORDS: array of words that is typed on the command line
-#
-# COMP_CWORD: index for the COMP_WORDS array and using this different position
-#             words on command line can be accessed.
-#
-# compgen : -W holds the possible completions and the respective argument get
-#           chosen based on the $current_arg.
-#
-# By convention, the function name starts with an underscore.
-# .bash_completion
-# source ./lib/completion
-
+declare -g glb_cur
 
 #
-# dev completion
+# Usage:
+#     dev_options
 #
-_dev_init_completion() {
-    # Pointer to current completion word.
-    # By convention, it's named "cur" but this isn't strictly necessary.
-    local prj cur prev opts
+dev_options() {
+    declare opt als ret
 
-    COMPREPLY=() # Array variable storing the possible completions.
-    cur=${COMP_WORDS[COMP_CWORD]}
-    prev=${COMP_WORDS[COMP_CWORD-1]}
+    for als in "${!opa_als[@]}"; do
+        opt="${opa_als[$als]}"
+        ret="$ret --${opt//_/-}" && [ "$opt" != "$als" ] && ret="$ret -$als"
+    done
 
-    declare arr=(${COMP_WORDS[@]})
-    unset arr[COMP_CWORD]
-    # echo "cur:$cur" >&2
-    # echo "arr:${arr[@]:1}" >&2
-    opts=$(dev --completion ":$cur" "${arr[@]:1}" 2>/dev/null) #
-
-    COMPREPLY=( $(compgen -W "$opts" -- "$cur" ) );
+    echo "${ret:1}"
 }
 
-complete -F _dev_init_completion dev
+#
+# Usage:
+#     dev_completion 
+#
+dev_completion() {
+    declare ret key prj wkdir
+
+    [ $glb_pnf -ge 1 ] && return 0
+
+    if [ "$glb_prj" == "dev" ]; then
+        wkdir=$glb_base
+
+        if [ -z $glb_file ]; then
+            # List all projects
+            for prj in "${!cfg_projects[@]}"; do
+                ret="$ret $prj"
+            done
+            # List files in dev project
+            ret="$ret $(dev_cmd_files $glb_base/cmd | tr '\n' ' ')"
+            echo "${ret:1}"; return 0
+        else
+            # List all cmd-func
+            dev_load_files $wkdir $glb_file
+            for key in $(compgen -A function); do
+                [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
+            done
+            echo "${ret:1}"; return 0
+        fi
+    else
+        wkdir=$glb_wkdir
+
+        if [ -z $glb_file ]; then
+            # List files in project
+            ret="$ret $(dev_cmd_files $wkdir/cmd | tr '\n' ' ')"
+            echo "${ret:1}"; return 0
+        else
+            # List all cmd-func
+            dev_load_files $wkdir $glb_file
+            for key in $(compgen -A function); do
+                [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
+            done
+            echo "${ret:1}"; return 0
+        fi
+    fi
+
+    echo "${ret:1}" return 0
+}
+
+#
+# A function called main is required for scripts long enough to contain at
+# least one other function.The last non-comment line in the file should be
+# a call to main: dev_main "$@"
+#
+dev_main() {
+    # cur
+    glb_cur="${1:1}" && shift
+    [ "${glb_cur:0:1}" == "-" ] && dev_options && return 0
+
+    # Porject name and working directory
+    if [ "${1:0:1}" != "-" ]; then
+        dev_prj $@ && shift
+    fi
+
+    declare opt func args argv shft
+
+    # Prepare optional arguments
+    while true ; do
+        opt=""; argv=""; shft="true"
+        if [[ "$1" == "--" || "$1" == "-" ]]; then
+            shift; break
+        elif [[ "${1:0:2}" == "--" ]]; then
+            opt="${1:2}"; shift
+        elif [[ "${1:0:1}" == "-" ]]; then
+            [ -z "${opa_als[${1:1}]}" ] && opt="${1:1}" || opt="${opa_als[${1:1}]}"; shift
+            [ -z "$opt" ] && echo "Unrecognized option -${1:1}" >&2
+        else
+            break
+        fi
+
+        [ -z $opt ] && continue
+
+        if [[ "$(expr index $opt '=')" -ge 1 ]]; then
+            IFS='=' read -ra args <<< "$opt"
+            opt="${args[0]}"; argv="${args[1]}";
+        elif [[ ! -z "$1" && "${1:0:1}" != "-" ]]; then
+            argv="$1"; shft="shift"
+        fi
+
+        func="opa_fun_${opt/-/_}"
+        if [[ "$(declare -F $func)" == "$func" ]]; then
+            $func $argv || $shft
+        fi
+    done
+
+    dev_prj $@ && shift
+    dev_file $@ && shift
+    dev_completion
+}
+
