@@ -44,7 +44,7 @@ fi
 sudo -u $sudoer mkdir -p $wkdir $home/.local/bin
 sudo -u $sudoer tar -xf /tmp/devinit.tar -C $wkdir
 sudo -u $sudoer mkdir -m a+w -p $wkdir/var/{log,tmp}
-[ ! -f "$wkdir/var/log/127.0.0.1.out" ] && sudo -u $sudoer touch $wkdir/var/log/127.0.0.1.out
+[ ! -f "$wkdir/var/log/127.0.0.1.log" ] && sudo -u $sudoer touch $wkdir/var/log/127.0.0.1.log
 rm -f /tmp/{devinit.tar,devinstaller}
 
 if [ ! -f $home/.bash_completion ]; then

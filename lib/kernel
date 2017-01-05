@@ -3,7 +3,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-declare glb_version="1.3"
+declare glb_version="1.4"
 
 # Run-state:
 # 0:Not-run(readonly)
@@ -13,7 +13,7 @@ declare glb_version="1.3"
 declare -g glb_run=1 glb_run_dry=0 glb_run_sudo=0 glb_run_daemon=0
 
 # Command file
-declare -g glb_file glb_func glb_argv glb_user glb_dest
+declare -g glb_file glb_func glb_argv glb_user glb_dest glb_sta=0 glb_etr="command"
 
 # For option arguments
 declare -Ag glb_run_nodes opa_rem opa_als
@@ -217,6 +217,11 @@ dev_func() {
         echo "Error: \$glb_func has a value: $glb_func" >&2; return 1
     fi
 
+    # File is command(stand alone)
+    if [ "$glb_sta" -gt 0 ]; then
+        glb_func="cmd_main"; return 1
+    fi
+
     if [[ $# -le 0 || -z "$1" ]]; then
         echo "Missing command function" >&2; echo >&2; dev_help_functions >&2; return 1
     fi
@@ -294,7 +299,7 @@ dev_exec() {
     declare user="$1"; shift
     declare desc="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')]"
 
-    log_out="$glb_wkdir/var/log/$host.out"
+    log_out="$glb_wkdir/var/log/$host.log"
 
     cmd="$@"
 

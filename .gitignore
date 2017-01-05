@@ -1,4 +1,6 @@
-/bin/demo
-/etc/dev.conf
+**/*.bak
+**/*.log
+**/*.swp
+**/tags
 /*.sublime-*
-/tags
+/etc/dev.conf
