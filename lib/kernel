@@ -3,14 +3,14 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-declare glb_version="1.4"
+declare glb_version="1.5"
 
 # Run-state:
 # 0:Not-run(readonly)
 # 1:Run(alterable,local,default)
 # 2:Run(readonly,local)
 # 3:Run(readonly,remote)
-declare -g glb_run=1 glb_run_dry=0 glb_run_sudo=0 glb_run_daemon=0
+declare -g glb_run=1 glb_run_dry=0 glb_run_sudo=0 glb_run_daemon=0 glb_run_compact=0
 
 # Command file
 declare -g glb_file glb_func glb_argv glb_user glb_dest glb_sta=0 glb_etr="command"
@@ -312,6 +312,8 @@ dev_exec() {
     if [ $glb_run_daemon -eq 1 ]; then
         nohup $cmd >>$log_out 2>&1 &
         echo "PID: $!"
+    elif [ $glb_run_compact -eq 1 ]; then
+        $cmd
     else
         $cmd 2>&1 | tee -a $log_out
     fi
