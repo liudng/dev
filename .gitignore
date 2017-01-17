@@ -1,7 +1,7 @@
-**/*.bak
-**/*.log
-**/*.swp
-**/*~
-**/tags
+*.bak
+*.log
+*.swp
+*~
+tags
 /*.sublime-*
 /etc/dev.conf
