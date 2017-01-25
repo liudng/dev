@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 glb_sta=1
 

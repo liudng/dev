@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright 2016 The dev Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
@@ -14,8 +14,8 @@
 # opa_fun_xxx: Optional arguments function.
 #
 # cfg_xxx: Configurations, declared in config file(readonly).
-# cmd_xxx: Command function, declared in xxx.sh files by user.
-# xxx: Local varialbes, declared in xxx.sh files by user. Declare
+# cmd_xxx: Command function, declared in xxx.bash files by user.
+# xxx: Local varialbes, declared in xxx.bash files by user. Declare
 #      function-specific variables with local. Declaration and assignment
 #      should be on different lines. for example:
 #          local file
@@ -106,7 +106,7 @@ dev_etr_completion() {
         ret="$ret $(dev_cmd_files $wkdir/cmd | tr '\n' ' ')"
     else
         # List all cmd-func
-        [ -f $wkdir/cmd/$glb_file.sh ] && . $wkdir/cmd/$glb_file.sh
+        [ -f $wkdir/cmd/$glb_file.bash ] && . $wkdir/cmd/$glb_file.bash
         for key in $(compgen -A function); do
             [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
         done
