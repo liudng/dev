@@ -1,4 +1,3 @@
-#!/bin/bash
 # Copyright 2016 The dev Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
@@ -33,26 +32,16 @@ set -o errexit
 
 #
 # Usage:
-#     dev_base
+#     dev_config
 #
-dev_base() {
-    declare base="$0" cfg
-
-    [ -L "$base" ] && base=$(readlink -f $base)
-    base=$(dirname $(realpath $base))
-
-    if [ "$(basename $base)" == "bin" ]; then
-        declare -gr glb_base="$(dirname $base)"
-    else
-        declare -gr glb_base="$base"
-    fi
-
+dev_config() {
     for cfg in "$glb_base/dev.conf", "$HOME/.dev.conf", "$glb_base/etc/dev.conf"; do
         [ -f $cfg ] && . $cfg && break
     done
 
     # Private key: glb_ssh_key
-    [ -z "$cfg_ssh_key" ] && declare -gr glb_ssh_key="$HOME/.ssh/id_rsa" || \
+    [ -z "$cfg_ssh_key" ] && \
+        declare -gr glb_ssh_key="$HOME/.ssh/id_rsa" || \
         declare -gr glb_ssh_key="$HOME/.ssh/$cfg_ssh_key"
 
     [ -f $glb_base/lib/kernel ] && . $glb_base/lib/kernel
@@ -187,5 +176,5 @@ dev_main() {
 }
 
 # Call to main function. custom function declare before here.
-dev_base && dev_main $@
+dev_config && dev_main $@
 

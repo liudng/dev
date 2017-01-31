@@ -1,4 +1,3 @@
-#!/bin/bash
 
 glb_sta=1
 glb_run_compact=1
