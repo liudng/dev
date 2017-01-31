@@ -245,7 +245,7 @@ dev_func() {
 #
 dev_run() {
     if [[ "$glb_run" -eq 1 ]]; then
-        glb_run="$1" return 0
+        glb_run="$1"; return 0
     else
         echo "Error: \$glb_run has a value: $glb_run" >&2; return 1
     fi
