@@ -43,3 +43,9 @@ cmd_associative_array_looping() {
       echo "value: ${array[$i]}"
     done
 }
+
+cmd_str() {
+    declare str="abcde-1.2.0.tar.gz"
+    echo "${str: -7}"
+    echo "${str:0:-7}"
+}
