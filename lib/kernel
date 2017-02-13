@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-declare -g glb_version="1.6.1"
+declare -g glb_version="1.6.2"
 
 # Run-state:
 # 0:Not-run(readonly)
@@ -156,6 +156,15 @@ dev_scp() {
 #
 dev_ssh() {
     declare cmd="ssh -i $glb_ssh_key -o StrictHostKeyChecking=no $@"
+    echo "$cmd" && $cmd
+}
+
+#
+# Usage:
+#     dev_yum
+#
+dev_yum() {
+    declare cmd="sudo yum -y $@"
     echo "$cmd" && $cmd
 }
 
