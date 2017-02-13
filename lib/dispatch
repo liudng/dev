@@ -29,24 +29,19 @@ set -o pipefail
 # set -e : exit the script if any statement returns a non-true return value
 set -o errexit
 
+# config
+for cfg in "$glb_base/dev.conf" "$HOME/.dev.conf" "$glb_base/etc/dev.conf"; do
+    [ -f $cfg ] && . $cfg && break
+done
 
-#
-# Usage:
-#     dev_config
-#
-dev_config() {
-    for cfg in "$glb_base/dev.conf", "$HOME/.dev.conf", "$glb_base/etc/dev.conf"; do
-        [ -f $cfg ] && . $cfg && break
-    done
+# Private key: glb_ssh_key
+[ -z "$cfg_ssh_key" ] && \
+    declare -gr glb_ssh_key="$HOME/.ssh/id_rsa" || \
+    declare -gr glb_ssh_key="$HOME/.ssh/$cfg_ssh_key"
 
-    # Private key: glb_ssh_key
-    [ -z "$cfg_ssh_key" ] && \
-        declare -gr glb_ssh_key="$HOME/.ssh/id_rsa" || \
-        declare -gr glb_ssh_key="$HOME/.ssh/$cfg_ssh_key"
-
-    [ -f $glb_base/lib/kernel ] && . $glb_base/lib/kernel
-    [ -f $glb_base/lib/options ] && . $glb_base/lib/options
-}
+# kernal files
+[ -f $glb_base/lib/kernel ] && . $glb_base/lib/kernel
+[ -f $glb_base/lib/options ] && . $glb_base/lib/options
 
 #
 # Usage:
