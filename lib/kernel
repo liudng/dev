@@ -161,15 +161,6 @@ dev_ssh() {
 
 #
 # Usage:
-#     dev_yum
-#
-dev_yum() {
-    declare cmd="sudo yum -y $@"
-    echo "$cmd" && $cmd
-}
-
-#
-# Usage:
 #     dev_dnf
 #
 dev_dnf() {
@@ -177,6 +168,11 @@ dev_dnf() {
     # --allowerasing
     #        Allow  erasing  of  installed  packages  to  resolve dependencies.
     declare cmd="sudo dnf -y --allowerasing -4 $@"
+    if [ "$(lsb_release -i -s)" == "CentOS" ]; then
+        # Compatible with CentOS 6.x/7.x
+        cmd="sudo yum -y $@"
+    fi
+
     echo "$cmd" && $cmd
 }
 
