@@ -171,5 +171,5 @@ dev_main() {
 }
 
 # Call to main function. custom function declare before here.
-dev_config && dev_main $@
+dev_main $@
 
