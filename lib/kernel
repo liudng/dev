@@ -359,10 +359,11 @@ dev_extra() {
 #
 dev_basename() {
     [ $# -lt 1 ] && return 1
-    case "$1" in
-        *.tar.gz) echo "${1:0:-7}" ;;
-        *.tar.bz2) echo "${1:0:-8}" ;;
-        *) echo "${1%.*}" ;;
+    declare str="$(basename $1)"
+    case "$str" in
+        *.tar.gz) echo "${str:0:-7}" ;;
+        *.tar.bz2) echo "${str:0:-8}" ;;
+        *) echo "${str%.*}" ;;
     esac
 }
 
@@ -372,11 +373,8 @@ dev_basename() {
 #
 dev_build() {
     [ -z "$1" ] || [ -z "$2" ] && echo "Usage: dev_build <url> <extra-dir> <strip-components>" >&2 && return 1
-    declare url=$1 fname=$(basename $1)
-    declare exdir="$fname"
-    [ "${exdir: -8}" == ".tar.bz2" ] && exdir="${exdir:0:-8}"
-    [ "${exdir: -7}" == ".tar.gz" ] && exdir="${exdir:0:-7}"
-    [ "${exdir: -4}" == ".tgz" ] && exdir="${exdir:0:-4}"
+    declare url="$1" fname=$(basename $1)
+    declare exdir="$(dev_basename $fname)"
     dev_download $url $fname
     dev_extra $fname $exdir $2
     cd $glb_wkdir/src/$exdir
