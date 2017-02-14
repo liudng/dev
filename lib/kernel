@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-declare -g glb_version="1.6.2"
+declare -g glb_version="1.7"
 
 # Run-state:
 # 0:Not-run(readonly)
@@ -12,7 +12,7 @@ declare -g glb_version="1.6.2"
 declare -g glb_run=1 glb_run_dry=0 glb_run_sudo=0 glb_run_daemon=0 glb_run_compact=0
 
 # Command file
-declare -g glb_file glb_func glb_argv glb_user glb_dest glb_sta=0 glb_etr="command"
+declare -g glb_file glb_func glb_argv glb_user glb_dest glb_etr="command"
 
 # For option arguments
 declare -Ag glb_run_nodes opa_rem opa_als
@@ -222,7 +222,7 @@ dev_func() {
     fi
 
     # File is command(stand alone)
-    if [ "$glb_sta" -gt 0 ]; then
+    if [[ "$(declare -F cmd_main)" == "cmd_main" ]]; then
         glb_func="cmd_main"; return 1
     fi
 
@@ -325,21 +325,6 @@ dev_exec() {
 
 #
 # Usage:
-#     dev_extra <fname> <extra-dir> <strip-components>
-#
-dev_extra() {
-    [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] && echo "Usage: dev_extra <fname> <strip-components>" >&2 && return 1
-    declare fp=$glb_wkdir/var/pkg/$1 sp=$glb_wkdir/src/$2
-    [ "${sp: -7}" == ".tar.gz" ] && sp="${sp:0:-7}"
-    [ "${sp: -8}" == ".tar.bz2" ] && sp="${sp:0:-8}"
-    [ "${sp: -4}" == ".tgz" ] && sp="${sp:0:-4}"
-    [ ! -z $glb_wkdir ] && [ ! -z "$2" ] && [ -d $sp ] && rm -rf $sp
-    mkdir -p $sp
-    tar --strip-components $3 -xzf $fp -C $sp
-}
-
-#
-# Usage:
 #     dev_download <url> [fname]
 #   
 dev_download() {
@@ -359,15 +344,41 @@ dev_download() {
 
 #
 # Usage:
+#     dev_extra <fname> <extra-dir> <strip-components>
+#
+dev_extra() {
+    [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] && echo "Usage: dev_extra <fname> <strip-components>" >&2 && return 1
+    declare fp=$glb_wkdir/var/pkg/$1 sp=$glb_wkdir/src/$2
+    [ ! -z $glb_wkdir ] && [ ! -z "$2" ] && [ -d $sp ] && rm -rf $sp
+    mkdir -p $sp
+    tar --strip-components $3 -xzf $fp -C $sp
+}
+
+#
+#
+#
+dev_basename() {
+    [ $# -lt 1 ] && return 1
+    case "$1" in
+        *.tar.gz) echo "${1:0:-7}" ;;
+        *.tar.bz2) echo "${1:0:-8}" ;;
+        *) echo "${1%.*}" ;;
+    esac
+}
+
+#
+# Usage:
 #     dev_build <url> <strip-components>
 #
 dev_build() {
     [ -z "$1" ] || [ -z "$2" ] && echo "Usage: dev_build <url> <extra-dir> <strip-components>" >&2 && return 1
     declare url=$1 fname=$(basename $1)
+    declare exdir="$fname"
+    [ "${exdir: -8}" == ".tar.bz2" ] && exdir="${exdir:0:-8}"
+    [ "${exdir: -7}" == ".tar.gz" ] && exdir="${exdir:0:-7}"
+    [ "${exdir: -4}" == ".tgz" ] && exdir="${exdir:0:-4}"
     dev_download $url $fname
-    dev_extra $fname $fname $2
-    cd $glb_wkdir/src/$fname
-    # shift 2
-    # $@ && make && make install
+    dev_extra $fname $exdir $2
+    cd $glb_wkdir/src/$exdir
 }
 

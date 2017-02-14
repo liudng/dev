@@ -6,3 +6,4 @@ tags
 /*.sublime-*
 /bin/dev
 /etc/dev.conf
+127.0.0.1.log
