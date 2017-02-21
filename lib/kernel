@@ -298,28 +298,27 @@ dev_exec_local() {
 #     dev_exec <host> <user> <command> <arguments>...
 #
 dev_exec() {
-    declare cmd log_out
     declare host="$1"; shift
     declare user="$1"; shift
+    declare cmd="$@"
     declare desc="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')]"
+    declare logout="$glb_wkdir/var/log/$host.log"
 
-    log_out="$glb_wkdir/var/log/$host.log"
-
-    cmd="$@"
-
-    echo "$desc" >>$log_out
-    echo "$cmd"; echo "$cmd" >>$log_out
-    chmod a+wx $log_out
+    echo "$desc" >>$logout
+    echo "$cmd" >>$logout
+    chmod a+wx $logout
 
     [ $glb_run_dry -eq 1 ] && return 0
 
     if [ $glb_run_daemon -eq 1 ]; then
-        nohup $cmd >>$log_out 2>&1 &
+        echo "$cmd";
+        nohup $cmd >>$logout 2>&1 &
         echo "PID: $!"
     elif [ $glb_run_compact -eq 1 ]; then
         $cmd
     else
-        $cmd 2>&1 | tee -a $log_out
+        echo "$cmd";
+        $cmd 2>&1 | tee -a $logout
     fi
 }
 
