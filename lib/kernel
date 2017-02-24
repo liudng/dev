@@ -368,14 +368,18 @@ dev_basename() {
 
 #
 # Usage:
-#     dev_build <url> <strip-components>
+#     dev_dextra <url> <fname> <strip-components>
 #
-dev_build() {
-    [ -z "$1" ] || [ -z "$2" ] && echo "Usage: dev_build <url> <extra-dir> <strip-components>" >&2 && return 1
-    declare url="$1" fname=$(basename $1)
+#     example:
+#         Download to var/pkg/nginx-1.2.0.tar.gz
+#         Extra to src/nginx-1.2.0
+#         dev_dextra http://xxx.com/v1.2.0.tar.gz nginx-1.2.0.tar.gz 1
+#
+dev_dextra() {
+    [[ $# -lt 3 ]] && echo "Usage: dev_dextra <url> <fname> <strip-components>" >&2 && return 1
+    declare url="$1" fname="$2"
     declare exdir="$(dev_basename $fname)"
     dev_download $url $fname
-    dev_extra $fname $exdir $2
-    cd $glb_wkdir/src/$exdir
+    dev_extra $fname $exdir $3
 }
 
