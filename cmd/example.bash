@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-
 cmd_helloworld() {
     echo "$(whoami)"
     for i in `seq 1 3`; do
@@ -48,4 +47,11 @@ cmd_basename() {
     dev_basename "abc-1.2.0.tar.gz"
     dev_basename "abc-1.2.0.tar.bz2"
     dev_basename "abc-1.2.0.tgz"
+}
+
+cmd_echo() {
+    dev_info "This is a info message."
+    dev_success "This is a success message."
+    dev_warning "This is a warning message."
+    dev_error "This is a error message."
 }

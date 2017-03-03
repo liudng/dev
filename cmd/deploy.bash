@@ -2,14 +2,10 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-#
-# Usage:
-#     dev_deploy
-#
 cmd_main() {
     declare wkdir
 
-    [ -z "$glb_argv" ] || [ "$glb_argv" == "dev" ] && wkdir="$glb_wkdir" || wkdir="${cfg_projects[$glb_argv]}"
+    [[ -z "$glb_argv" || "$glb_argv" == "dev" ]] && wkdir="$glb_wkdir" || wkdir="${cfg_projects[$glb_argv]}"
     [ -z "$wkdir" ] && echo "Config error in $glb_base/etc/dev.conf" >&2 && return 1
     [ "${#glb_run_nodes[@]}" -le 0 ] && echo "Nodes is empty" >&2 && return 1
 
@@ -24,7 +20,9 @@ cmd_main() {
     cd $wkdir
     tar --exclude='./devinit.tar' \
         --exclude='./*.sublime-*' \
+        --exclude='./tags' \
         --exclude='./var/log' \
+        --exclude='./var/run' \
         --exclude='./var/tmp' \
         -cf $init_tar .
 

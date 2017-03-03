@@ -367,6 +367,7 @@ dev_basename() {
 }
 
 #
+# Download and extract to src/<dir>.
 # Usage:
 #     dev_dextra <url> <fname> <strip-components>
 #
@@ -383,3 +384,30 @@ dev_dextra() {
     dev_extra $fname $exdir $3
 }
 
+#
+# Green
+#
+dev_success() {
+    printf "\e[32m" && echo "$@" && printf "\e[m"
+}
+
+#
+# Blue
+#
+dev_info() {
+    printf "\e[34m" && echo "$@" && printf "\e[m"
+}
+
+#
+# Yellow
+#
+dev_warning() {
+    printf "\e[33m" && echo "$@" && printf "\e[m"
+}
+
+#
+# Red
+#
+dev_error() {
+    printf "\e[31m" && echo "$@" && printf "\e[m"
+}
