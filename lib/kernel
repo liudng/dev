@@ -70,7 +70,7 @@ dev_help_projects() {
             for prj in "${!cfg_projects[@]}"; do
                 ret="$ret $prj"
             done
-            echo ${ret:1} |tr " " "\n" |column -c $(tput cols) |fmt; echo
+            echo ${ret:1} |tr " " "\n" |sort |column -c $(tput cols); echo
         fi
     else
         wkdir=$glb_wkdir
@@ -96,7 +96,7 @@ dev_help_files() {
 
     declare ret
     ret="$ret $(dev_cmd_files $wkdir/cmd)"
-    echo ${ret:1} |tr " " "\n" |column -c $(tput cols) |fmt; echo
+    echo ${ret:1} |tr " " "\n" |sort |column -c $(tput cols); echo
 }
 
 #
