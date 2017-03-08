@@ -40,8 +40,9 @@ done
     declare -gr glb_ssh_key="$HOME/.ssh/$cfg_ssh_key"
 
 # kernal files
-[ -f $glb_base/lib/kernel ] && . $glb_base/lib/kernel
-[ -f $glb_base/lib/options ] && . $glb_base/lib/options
+. $glb_base/lib/kernel.bash
+. $glb_base/lib/options.bash
+. $glb_base/lib/functions.bash
 
 #
 # Usage:
@@ -172,4 +173,3 @@ dev_main() {
 
 # Call to main function. custom function declare before here.
 dev_main $@
-

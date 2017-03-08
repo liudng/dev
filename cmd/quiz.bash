@@ -67,5 +67,4 @@ cmd_main() {
 
     echo -n "    Choice:"
     read -n 1 choice
-    echo "$choice"
 }

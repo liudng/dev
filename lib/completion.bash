@@ -16,7 +16,7 @@
 #
 # By convention, the function name starts with an underscore.
 # .bash_completion
-# source ./lib/completion
+# source ./lib/completion.bash
 
 
 #

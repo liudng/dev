@@ -21,4 +21,4 @@ dev_base() {
     fi
 }
 
-dev_base && source "$glb_base/lib/dispatch"
+dev_base && source "$glb_base/lib/dispatch.bash"

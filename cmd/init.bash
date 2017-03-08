@@ -6,8 +6,6 @@
 #
 #
 cmd_main() {
-    dev_run 0 || return $#
-
     [ -z "$1" ] && echo "Usage: dev --init <prj>" >&2 && return 0
 
     declare prj="$1" wkdir="${cfg_projects[$1]}"
@@ -26,7 +24,7 @@ cmd_main() {
         $wkdir/var/pkg \
         $wkdir/var/tmp
 
-    [ -f $wkdir/lib/bootstrap ] || touch $wkdir/lib/bootstrap
+    [ -f $wkdir/lib/bootstrap.bash ] || touch $wkdir/lib/bootstrap.bash
 
     return 1
 }

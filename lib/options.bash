@@ -10,12 +10,12 @@ opa_rem[help]="Help topic and usage information"
 opa_als[h]="help"
 opa_fun_help() {
     if [[ $# -le 0 || -z "$1" ]]; then
-        dev_run 0 || return 0
+        dev_run_level 0 || return 0
         dev_help_usage
         dev_help_options
         return 0
     else
-        dev_run 0 || return 1
+        dev_run_level 0 || return 1
         dev_help_usage "$1"
         dev_help_options
         return 1
@@ -110,7 +110,7 @@ opa_fun_dry_run() {
 opa_rem[version]=""
 opa_als[version]="version"
 opa_fun_version() {
-    dev_run 0 || return 0
+    dev_run_level 0 || return 0
     echo "dev version $glb_version"
     return 0
 }
