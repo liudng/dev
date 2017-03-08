@@ -4,7 +4,7 @@
 #
 dev_scp() {
     declare cmd="scp -i $glb_ssh_key -o StrictHostKeyChecking=no $@"
-    echo "$cmd" && $cmd
+    dev_info "$cmd" && $cmd
 }
 
 #
@@ -13,7 +13,7 @@ dev_scp() {
 #
 dev_ssh() {
     declare cmd="ssh -i $glb_ssh_key -o StrictHostKeyChecking=no $@"
-    echo "$cmd" && $cmd
+    dev_info "$cmd" && $cmd
 }
 
 #
@@ -25,12 +25,12 @@ dev_dnf() {
     # --allowerasing
     #        Allow  erasing  of  installed  packages  to  resolve dependencies.
     declare cmd="sudo dnf -y --allowerasing -4 $@"
-    if [ "$(lsb_release -i -s)" == "CentOS" ]; then
+    if ! command -v dnf > /dev/null; then
         # Compatible with CentOS 6.x/7.x
         cmd="sudo yum -y $@"
     fi
 
-    echo "$cmd" && $cmd
+    dev_info "$cmd" && $cmd
 }
 
 #

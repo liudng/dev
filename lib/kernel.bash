@@ -171,7 +171,7 @@ dev_file() {
     fi
 
     if ! dev_load_files $glb_wkdir $1; then
-        echo "Command file not found: $glb_wkdir/cmd/$1.bash" >&2; return 1
+        dev_error "Command file not found: $glb_wkdir/cmd/$1.bash" >&2; return 1
     fi
 
     glb_file="$1"; return 0
@@ -182,7 +182,7 @@ dev_file() {
 #
 dev_func() {
     if [ ! -z "$glb_func" ]; then
-        echo "Error: \$glb_func has a value: $glb_func" >&2; return 1
+        dev_error "\$glb_func has a value: $glb_func" >&2; return 1
     fi
 
     # File is command(stand alone)
@@ -191,14 +191,14 @@ dev_func() {
     fi
 
     if [[ $# -le 0 || -z "$1" ]]; then
-        echo "Missing command function" >&2; echo >&2; dev_help_functions >&2; return 1
+        dev_error "Missing command function" >&2; echo >&2; dev_help_functions >&2; return 1
     fi
 
     declare func=${1/-/_}
 
     [[ "${func:0:4}" == "cmd_" || -z "$glb_file" ]] || func="cmd_$func"
     if [[ "$(declare -F $func)" != "$func" ]]; then
-        echo "Command not found: $func" >&2; return 1
+        dev_error "Command not found: $func" >&2; return 1
     fi
 
     glb_func="$func"
@@ -216,7 +216,7 @@ dev_run_level() {
     if [[ "$glb_run" -eq 1 ]]; then
         glb_run="$1"; return 0
     else
-        echo "Error: \$glb_run has a value: $glb_run" >&2; return 1
+        dev_error "\$glb_run has a value: $glb_run" >&2; return 1
     fi
 }
 
@@ -228,7 +228,7 @@ dev_run_level() {
 #
 dev_exec_remote() {
     if [[ "${#glb_run_nodes[@]}" -le 0 ]]; then
-        echo "Nodes is empty" >&2; return 1
+        dev_error "Nodes is empty" >&2; return 1
     fi
 
     declare cmd user host
@@ -275,13 +275,13 @@ dev_exec() {
     [ $glb_run_dry -eq 1 ] && return 0
 
     if [ $glb_run_daemon -eq 1 ]; then
-        echo "$cmd";
+        dev_info "$cmd"
         nohup $cmd >>$logout 2>&1 &
-        echo "PID: $!"
+        dev_info "PID: $!"
     elif [ $glb_run_compact -eq 1 ]; then
         $cmd
     else
-        echo "$cmd";
+        dev_info "$cmd"
         $cmd 2>&1 | tee -a $logout
     fi
 }
