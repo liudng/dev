@@ -275,13 +275,13 @@ dev_exec() {
     [ $glb_run_dry -eq 1 ] && return 0
 
     if [ $glb_run_daemon -eq 1 ]; then
-        dev_info "$cmd"
+        dev_info "$cmd" >&2
         nohup $cmd >>$logout 2>&1 &
-        dev_info "PID: $!"
+        dev_info "PID: $!" >&2
     elif [ $glb_run_compact -eq 1 ]; then
         $cmd
     else
-        dev_info "$cmd"
+        dev_info "$cmd" >&2
         $cmd 2>&1 | tee -a $logout
     fi
 }
