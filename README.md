@@ -1,15 +1,17 @@
 # dev
 
-Development environment initialization and deployment toolkit.
+Help to effectively manage software projects.
 
+For large and complex software projects need to setup the development environment, including software installation dependent clone source code repository, manage a large number of scripts custom configuration files, and so on.
+
+How to make these things easier, it is dev's goal. To use dev must understand linux and bash.
+
+## Featue
+
+* Quickly initialize a new development environment.
+* Consistent directory structure.
+* All commands are stored in the cmd directory and can be reused.
 * Manage several aspects of a project, including command, repositories, password etc.
-* Run the command on all nodes (--all) or specified nodes (--node=slave).
-* Only run on local machine (default), most are for debugging.
-* Verify that all nodes are ready to run the command.
-* When a node runs a command that fails, you can customize a handler function.
-* Console Password Manager
-* Multiple SCM repository management tool
-
 
 ## Usage
 
@@ -17,7 +19,8 @@ Development environment initialization and deployment toolkit.
 dev [-options] [project] <cmd-file> <cmd-func> [arguments] ...
 dev <-options> [project] [arguments] ...
 ```
+## Examples
 
-## Notes
-
-* Shell style configuration files.
+```sh
+todo
+```
