@@ -54,11 +54,10 @@ dev <-options> [project] [arguments] ...
 ```
 
 `dev`'s custom commands are saved in the cmd directory, and the file extension 
-must be `.bash`, In the help topic it is named **cmd-file**.
+must be `.bash`, In the help topic it is named **cmd-file**. In each command 
+file, **cmd-func** is prefixed with *cmd_*.
 
-In each command file, **cmd-func** is prefixed with *cmd_*.
-
-## Examples
+## Example command
 
 Create a new command to copy the following text to the file ~/dev/cmd/demo.bash:
 
@@ -76,6 +75,8 @@ dev demo helloworld
 
 In the above command, **demo** is cmd-file. **helloworld** is cmd-func.
 
+> You can save all project-related commands in the cmd directory.
+
 More examples, see the files in th [cmd](https://github.com/liudng/dev/tree/master/cmd) directory.
 
 ## Multi-project
@@ -83,6 +84,8 @@ More examples, see the files in th [cmd](https://github.com/liudng/dev/tree/mast
 Using dev to manage multiple projects is very easy.
 
 ...
+
+More project examples, see the [sys](https://github.com/liudng/sys) project.
 
 ## Copyright
 
