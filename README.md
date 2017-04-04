@@ -54,9 +54,9 @@ dev <-options> [project] [arguments] ...
 ```
 
 `dev`'s custom commands are saved in the cmd directory, and the file extension 
-must be .bash. In the help topic it is named **<cmd-file>**.
+must be `.bash`, In the help topic it is named **cmd-file**.
 
-In each command file, **<cmd-func>** is prefixed with *cmd_*.
+In each command file, **cmd-func** is prefixed with *cmd_*.
 
 ## Examples
 
@@ -74,7 +74,7 @@ And then type the following command to run:
 dev demo helloworld
 ```
 
-In the above command, **demo** is <cmd-file>. **helloworld** is <cmd-func>.
+In the above command, **demo** is cmd-file. **helloworld** is cmd-func.
 
 More examples, see the files in th [cmd](https://github.com/liudng/dev/tree/master/cmd) directory.
 
