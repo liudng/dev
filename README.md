@@ -1,4 +1,4 @@
-# dev - Help to effectively manage software projects
+# dev - Help developers effectively manage software projects
 
 [![License](https://img.shields.io/badge/license-BSD-blue.svg?style=flat)](https://github.com/liudng/dev/blob/master/LICENSE)
 
@@ -6,20 +6,27 @@ For large and complex software projects need to setup the development
 environment, including software installation dependents,  clone source code 
 repository, manage a large number of scripts, custom configuration files, and so on.
 
-How to make these things easier, it is dev's goal. 
+How to make these things easier, it is [dev](https://github.com/liudng/dev)'s goal. 
 
-> To use dev must understand linux and bash.
+> To use [dev](https://github.com/liudng/dev) must understand linux and bash.
 
-## Featue
+## Why use dev?
 
+* Keep all projects with the same directory structure.
+* Each project has a separate environment.
+* Record requirements and configuration changes.
+
+## Featues
+
+* Writen in pure bash.
 * Quickly initialize a new development environment.
-* Consistent directory structure.
+* Consistent directory structure for multiple projects.
 * All commands are stored in the cmd directory and can be reused.
-* Manage several aspects of a project, including command, repositories, password etc.
+* Manage several aspects of a project, including configurations, repositories and documentation etc.
 
 ## Installation
 
-Clone the dev repository to a local directory:
+Clone the [dev](https://github.com/liudng/dev) repository to a local directory:
 
 ```sh
 git clone git@github.com:liudng/dev.git ~/dev
@@ -32,7 +39,7 @@ echo "export PATH=$PATH:~/dev/bin" >> ~/.bashrc
 ln -s ~/dev/bin/dev.bash ~/dev/bin/dev
 ```
 
-or link ~/dev/bin/dev.bash to a PATH directory:
+Or link ~/dev/bin/dev.bash to a PATH directory:
 
 ```sh
 ln -s ~/dev/bin/dev.bash ~/.local/bin/dev
@@ -53,7 +60,7 @@ dev [-options] [project] <cmd-file> <cmd-func> [arguments] ...
 dev <-options> [project] [arguments] ...
 ```
 
-`dev`'s custom commands are saved in the cmd directory, and the file extension 
+[dev](https://github.com/liudng/dev)'s custom commands are saved in the cmd directory, and the file extension 
 must be `.bash`, In the help topic it is named **cmd-file**. In each command 
 file, **cmd-func** is prefixed with *cmd_*.
 
@@ -81,7 +88,7 @@ More examples, see the files in th [cmd](https://github.com/liudng/dev/tree/mast
 
 ## Multi-project
 
-Using dev to manage multiple projects is very easy.
+Using [dev](https://github.com/liudng/dev) to manage multiple projects is very easy.
 
 ...
 
@@ -89,6 +96,6 @@ More project examples, see the [sys](https://github.com/liudng/sys) project.
 
 ## Copyright
 
-Copyright 2017 The dev Authors. All rights reserved.
+Copyright 2017 The [dev](https://github.com/liudng/dev) Authors. All rights reserved.
 
 Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
