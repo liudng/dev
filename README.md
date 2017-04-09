@@ -1,4 +1,4 @@
-# dev - Help developers effectively manage software projects
+# dev - Help developers effectively manage projects
 
 [![License](https://img.shields.io/badge/license-BSD-blue.svg?style=flat)](https://github.com/liudng/dev/blob/master/LICENSE)
 
