@@ -8,7 +8,7 @@ repository, manage a large number of scripts, custom configuration files, and so
 
 How to make these things easier, it is [dev](https://github.com/liudng/dev)'s goal. 
 
-> To use [dev](https://github.com/liudng/dev) must understand linux and bash.
+> Use [dev](https://github.com/liudng/dev) to be familiar with linux and bash.
 
 ## Why use dev?
 
@@ -56,15 +56,14 @@ cat ~/dev/lib/completion.bash >> ~/.bash_completion
 ## Usage
 
 ```sh
-dev [-options] [project] <cmd-file> <cmd-func> [arguments] ...
-dev <-options> [project] [arguments] ...
+dev [-options] [project] <cmd-file> <cmd-func> [arguments...]
 ```
 
 [dev](https://github.com/liudng/dev)'s custom commands are saved in the cmd directory, and the file extension 
 must be `.bash`, In the help topic it is named **cmd-file**. In each command 
 file, **cmd-func** is prefixed with *cmd_*.
 
-## Example command
+## Example
 
 Create a new command to copy the following text to the file ~/dev/cmd/demo.bash:
 
