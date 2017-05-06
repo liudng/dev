@@ -43,6 +43,7 @@ Or link ~/dev/bin/dev.bash to a PATH directory:
 
 ```sh
 ln -s ~/dev/bin/dev.bash ~/.local/bin/dev
+ln -s ~/dev/bin/dev.bash ~/dev/bin/dev
 ```
 
 The installation is complete, enter `dev --help` at the command line to see how to use it.
