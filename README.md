@@ -8,7 +8,7 @@ repository, manage a large number of scripts, custom configuration files, and so
 
 How to make these things easier, it is [dev](https://github.com/liudng/dev)'s goal. 
 
-> Use [dev](https://github.com/liudng/dev) to be familiar with linux and bash.
+> This documentation assumes you are already familiar with Bash. If you do not know anything about Bash, consider familiarizing yourself with the general terminology and features of Bash before continuing.
 
 ## Why use dev?
 
