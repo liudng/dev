@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-glb_run_compact=1
-
 cmd_main() {
     declare line key val
     declare -A correct
@@ -24,7 +22,7 @@ cmd_main() {
         # Example
         # xargs (1)            - build and execute command lines from standard input
         # xauth (1)            - X authority file utility
-         
+
         key="${line%%\ *}" # delete longest match of pattern from the end
         val="${line#*\)}"  # delete shortest match of pattern from the beginning
         val="${val#*-}"

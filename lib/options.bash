@@ -107,7 +107,7 @@ opa_fun_dry_run() {
 # Usage:
 #     dev --version
 #
-opa_rem[version]=""
+opa_rem[version]="Output version information and exit"
 opa_als[version]="version"
 opa_fun_version() {
     dev_run_level 0 || return 0
@@ -125,4 +125,15 @@ opa_fun_dest() {
     [ -z "$1" ] && echo "Usage: dev --dest <prj>" >&2 && return 0
     [ -z "${cfg_projects[$1]}" ] && echo "Project $1 not exists" >&2 && return 1
     glb_dest="${cfg_projects[$1]}" && return 1
+}
+
+#
+# Usage:
+#     dev --verbose
+#
+opa_rem[verbose]="Produce more output about what the program does"
+opa_als[v]="verbose"
+opa_fun_verbose() {
+    glb_verbose="1"
+    return 0
 }

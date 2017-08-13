@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-glb_run_compact=1
-
 cmd_main() {
     if [ $# -lt 1 ] || [ "$1" == "" ]; then
         echo "Usage: dev find_and_delete keywords"
