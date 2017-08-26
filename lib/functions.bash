@@ -40,7 +40,7 @@ dev_dnf() {
 #
 # Usage:
 #     dev_download <url> [fname]
-#   
+#
 dev_download() {
     [ -z $1 ] && return 0
     [ -z $2 ] && local fname=$(basename $1) || local fname=$2
@@ -112,4 +112,22 @@ dev_warning() {
 #
 dev_info() {
     printf "\e[34m" && echo "$@" && printf "\e[m"
+}
+
+#
+# dev_read prevents collapsing of empty fields
+# https://stackoverflow.com/questions/21109036/select-mysql-query-with-bash
+#
+dev_read() {
+    local input
+
+    IFS= read -r input || return $?
+
+    while (( $# > 1 )); do
+        IFS= read -r "$1" <<< "${input%%[$IFS]*}"
+        input="${input#*[$IFS]}"
+        shift
+    done
+
+    IFS= read -r "$1" <<< "$input"
 }
