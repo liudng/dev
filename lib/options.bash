@@ -24,23 +24,14 @@ opa_fun_help() {
 
 #
 # Usage:
-#     dev --target <host>
+#     dev --host <host>
 #
-opa_rem[target]=""
-opa_als[t]="target"
-opa_fun_target() {
-    [ -z "$1" ] && echo "Usage: dev --target <host>" >&2 && return 0
+opa_rem[host]=""
+opa_als[t]="host"
+opa_fun_host() {
+    [ -z "$1" ] && echo "Usage: dev --host <host>" >&2 && return 0
 
-    if [ "$1" == "all" ]; then
-        declare host
-        for host in "${!cfg_nodes[@]}"; do
-            glb_run_nodes[$host]="${cfg_nodes[$host]}"
-        done
-        return 1
-    fi
-
-    [ -z "${cfg_nodes[$1]}" ] && echo "Node not found: $1" >&2 && return 1
-    glb_run_nodes[$1]="${cfg_nodes[$1]}"
+    glb_run_nodes[$1]="$1"
     return 1
 }
 
@@ -117,14 +108,14 @@ opa_fun_version() {
 
 #
 # Usage:
-#     dev --dest <prj>
+#     dev --prefix <prj>
 #
-opa_rem[dest]="Destination"
-opa_als[dest]="dest"
-opa_fun_dest() {
-    [ -z "$1" ] && echo "Usage: dev --dest <prj>" >&2 && return 0
+opa_rem[prefix]="Install architecture-independent files in PREFIX"
+opa_als[prefix]="prefix"
+opa_fun_prefix() {
+    [ -z "$1" ] && echo "Usage: dev --prefix <prj>" >&2 && return 0
     [ -z "${cfg_projects[$1]}" ] && echo "Project $1 not exists" >&2 && return 1
-    glb_dest="${cfg_projects[$1]}" && return 1
+    glb_prefix="${cfg_projects[$1]}" && return 1
 }
 
 #

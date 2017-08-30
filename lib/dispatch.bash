@@ -61,7 +61,7 @@ dev_etr_options() {
 
 #
 # Usage:
-#     dev_completion 
+#     dev_completion
 #
 dev_etr_completion() {
     declare ret key prj wkdir
@@ -93,7 +93,7 @@ dev_etr_completion() {
         # List all cmd-func
         [ -f $wkdir/cmd/$glb_file.bash ] && . $wkdir/cmd/$glb_file.bash
         for key in $(compgen -A function); do
-            [ "${key:0:4}" == "cmd_" ] && ret="$ret ${key:4}"
+            [[ "${key:0:4}" == "cmd_" && "${key:4}" != "main" ]] && ret="$ret ${key:4}"
         done
     fi
 
@@ -107,7 +107,7 @@ dev_etr_command() {
 	[[ "$glb_run" -ge 1 && "${#glb_run_nodes[@]}" -gt 0 ]] && glb_run="3"
 
 	dev_prj $@ && shift
-    [ -z "$glb_dest" ] && glb_dest=$glb_wkdir
+    [ -z "$glb_prefix" ] && glb_prefix=$glb_wkdir
 
 	dev_file $@ && shift || return 1
 	dev_func $@ && shift

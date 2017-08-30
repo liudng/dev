@@ -6,25 +6,36 @@
 #
 #
 cmd_main() {
-    [ -z "$1" ] && echo "Usage: dev --init <prj>" >&2 && return 0
+    [ -z "$1" ] && echo "Usage: dev init <prj>" >&2 && return 1
 
     declare prj="$1" wkdir="${cfg_projects[$1]}"
 
-    [ "$prj" = "dev" ] && echo "Project dev no need init" >&2 && return 1
-    [ -z "$wkdir" ] && echo "Config error: cfg_projects[$prj], in $glb_base/etc/dev.conf" >&2 && return 1
-    [ -d $wkdir/bin ] || [ -d $wkdir/cmd ] && echo "Project $prj exists" >&2 && return 1
+    if [[ "$1" = "dev" ]]; then
+        wkdir="$glb_base"
+    elif [[ -z "${cfg_projects[$1]}" ]]; then
+        echo "Project $1 not exists" >&2
+        return 1
+    fi
 
-    mkdir -p \
-        $wkdir/bin \
-        $wkdir/cmd \
-        $wkdir/etc/cmd \
-        $wkdir/lib \
-        $wkdir/var/log \
-        $wkdir/var/misc \
-        $wkdir/var/pkg \
-        $wkdir/var/tmp
+    mkdir -p $HOME/.local/{bin,lib,lib64,share}
+    mkdir -p $wkdir/{src,usr} $wkdir/var/{misc,pkg}
+    mkdir -m a+w -p $wkdir/var/{log,tmp}
+
+    if [ ! -f $HOME/.bash_completion ]; then
+        touch $HOME/.bash_completion
+    fi
+
+    if [ -f $wkdir/lib/completion.bash ]; then
+        grep -q "_dev_init_completion" $HOME/.bash_completion || \
+            cat $wkdir/lib/completion.bash >> $HOME/.bash_completion
+    fi
+
+    grep -q "complete -F _dev_init_completion $prj" $HOME/.bash_completion || \
+        echo "complete -F _dev_init_completion $prj" >> $HOME/.bash_completion
+
+    [ ! -L $HOME/.local/bin/$prj ] && ln -s $wkdir/bin/$prj.bash $HOME/.local/bin/$prj
 
     [ -f $wkdir/lib/bootstrap.bash ] || touch $wkdir/lib/bootstrap.bash
 
-    return 1
+    dev_verbose "done"
 }

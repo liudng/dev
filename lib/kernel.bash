@@ -12,7 +12,7 @@ declare -g glb_version="1.8"
 declare -g glb_run=1 glb_run_dry=0 glb_run_sudo=0 glb_run_daemon=0 glb_verbose=0
 
 # Command file
-declare -g glb_file glb_func glb_argv glb_user glb_dest glb_etr="command"
+declare -g glb_file glb_func glb_user="$USER" glb_prefix glb_etr="command"
 
 # For option arguments
 declare -Ag glb_run_nodes opa_rem opa_als
@@ -231,15 +231,14 @@ dev_exec_remote() {
         dev_error "Nodes is empty" >&2; return 1
     fi
 
-    declare cmd user host
+    declare cmd host
 
     for host in "${!glb_run_nodes[@]}"; do
-        user="${glb_run_nodes[$host]}"
-        cmd="ssh -i $glb_ssh_key -o StrictHostKeyChecking=no $user@$host"
+        cmd="ssh -i $glb_ssh_key -o StrictHostKeyChecking=no $glb_user@$host"
         [ $glb_run_sudo -eq 1 ] && cmd="$cmd sudo"
 
         set +o errexit
-        dev_exec $host $user $cmd $@
+        dev_exec $host $glb_user $cmd $@
         set -o errexit
 
         echo
@@ -274,9 +273,7 @@ dev_exec() {
 
     [ $glb_run_dry -eq 1 ] && return 0
 
-    if [ $glb_verbose -eq 1 ]; then
-        dev_info "$cmd" >&2
-    fi
+    dev_verbose "$cmd"
 
     if [ $glb_run_daemon -eq 1 ]; then
         nohup $cmd >>$logout 2>&1 &

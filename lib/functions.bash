@@ -8,7 +8,8 @@
 #
 dev_scp() {
     declare cmd="scp -i $glb_ssh_key -o StrictHostKeyChecking=no $@"
-    dev_info "$cmd" && $cmd
+    dev_verbose "$cmd"
+    $cmd
 }
 
 #
@@ -17,7 +18,8 @@ dev_scp() {
 #
 dev_ssh() {
     declare cmd="ssh -i $glb_ssh_key -o StrictHostKeyChecking=no $@"
-    dev_info "$cmd" && $cmd
+    dev_verbose "$cmd"
+    $cmd
 }
 
 #
@@ -34,7 +36,8 @@ dev_dnf() {
         cmd="sudo yum -y $@"
     fi
 
-    dev_info "$cmd" && $cmd
+    dev_verbose "$cmd"
+    $cmd
 }
 
 #
@@ -130,4 +133,15 @@ dev_read() {
     done
 
     IFS= read -r "$1" <<< "$input"
+}
+
+#
+# Verbose
+#
+dev_verbose() {
+    if [ $glb_verbose -eq 1 ]; then
+        dev_info "$@" >&2
+    fi
+
+    return 0
 }

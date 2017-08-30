@@ -1,4 +1,5 @@
 .git
-var/log/*
-var/tmp/*
-*.sublime-*
+src/*
+tags
+usr/*
+var/*
