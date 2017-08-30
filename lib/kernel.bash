@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-declare -g glb_version="1.8"
+declare -g glb_version="1.8.1"
 
 # Run-state:
 # 0:Not-run(readonly)

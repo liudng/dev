@@ -1,4 +1,5 @@
 .git
+etc/dev.conf
 src/*
 tags
 usr/*

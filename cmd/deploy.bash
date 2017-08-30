@@ -6,6 +6,29 @@
 # Usage:
 #     dev deploy <prj> vagrant 192.168.56.70
 #
+# Example:
+#     1. Set root password:
+#        sudo passwd root
+#     2. Relogin use root:
+#        exit
+#     3. Remove user vagrant:
+#        userdel -f -r vagrant
+#     4. Set network:
+#        ifconfig eth1 on
+#        ifconfig eth1 192.168.56.70
+#     5. Deploy dev:
+#        dev -v deploy dev root 192.168.56.70
+#        scp ~/.dev.conf root@192.168.56.70:/root
+#     6. Login to root@192.168.56.70:
+#        vi ~/.dev.conf
+#     7. Deploy sys:
+#        dev -v deploy sys root 192.168.56.70
+#     8. Set hostname:
+#        sys fedora hostname wk
+#     9. Create sudoer:
+#        dev -v sudoer ld
+#
+#
 cmd_main() {
     if [[ $# -lt 3 ]]; then
         dev_info "Usage: dev deploy <prj> <user> <host>" >&2
@@ -24,6 +47,7 @@ cmd_main() {
     cd $wkdir
 
     tar --exclude='./devinit.tar' \
+        --exclude='./etc/dev.conf' \
         --exclude='./src' \
         --exclude='./tags' \
         --exclude='./usr' \
@@ -41,7 +65,7 @@ cmd_main() {
     cmd="mkdir -p \$HOME/$prj/var/log &&"
     cmd="$cmd tar -xf /tmp/devinit.tar -C \$HOME/$prj &&"
     cmd="$cmd rm -f /tmp/devinit.tar &&"
-    cmd="$cmd \$HOME/$prj/bin/$prj.bash init dev"
+    cmd="$cmd \$HOME/dev/bin/dev.bash init $prj"
     dev_ssh $user@$host "$cmd"
 
     rm -f $init_tar

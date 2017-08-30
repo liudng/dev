@@ -17,7 +17,7 @@ cmd_main() {
         return 1
     fi
 
-    mkdir -p $HOME/.local/{bin,lib,lib64,share}
+    mkdir -p $HOME/bin $HOME/.local/{bin,lib,lib64,share}
     mkdir -p $wkdir/{src,usr} $wkdir/var/{misc,pkg}
     mkdir -m a+w -p $wkdir/var/{log,tmp}
 
@@ -33,9 +33,9 @@ cmd_main() {
     grep -q "complete -F _dev_init_completion $prj" $HOME/.bash_completion || \
         echo "complete -F _dev_init_completion $prj" >> $HOME/.bash_completion
 
-    [ ! -L $HOME/.local/bin/$prj ] && ln -s $wkdir/bin/$prj.bash $HOME/.local/bin/$prj
+    [ ! -L $HOME/bin/$prj ] && ln -s $wkdir/bin/$prj.bash $HOME/bin/$prj
 
-    [ -f $wkdir/lib/bootstrap.bash ] || touch $wkdir/lib/bootstrap.bash
+    [ ! -f $wkdir/lib/bootstrap.bash ] && touch $wkdir/lib/bootstrap.bash
 
     dev_verbose "done"
 }
