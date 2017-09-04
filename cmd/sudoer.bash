@@ -5,44 +5,47 @@
 
 #
 # Usage:
-#     dev sudoer <sudoer>
+#     dev sudoer <sudoer> <host>
+#
+# Example:
+#     r1. Set root password:
+#        sudo passwd root
+#     r2. Relogin use root:
+#        exit
+#     r3. Remove user vagrant:
+#        userdel -f -r vagrant
+#     r4. Set network:
+#        ifconfig eth1 on
+#        ifconfig eth1 192.168.56.70
+#      1. Create sudoer:
+#        dev -v sudoer ld 192.168.56.70
+#     r5. Set hostname:
+#        sys --sudo fedora hostname wk
+#     r6. Install
+#        sys fedora/vbox init xorg
 #
 cmd_main() {
-    [ $# -lt 1 ] && dev_info "Usage: dev sudoer <sudoer>" >&2 && return 1
+    [ $# -lt 2 ] && dev_info "Usage: dev sudoer <sudoer> <host>" >&2 && return 1
 
-    declare sudoer="$1" home
+    declare cmd user="root" host="$2" sudoer="$1"
 
-    if [ "$sudoer" = "root" ]; then
-        dev_info "root no need sudo." >&2
-        return 1
-    fi
+    cmd="mkdir -m 700 -p \$HOME/.ssh &&"
+    cmd="$cmd cat > \$HOME/.ssh/authorized_keys &&"
+    cmd="$cmd chmod 600 \$HOME/.ssh/authorized_keys"
+    cat $glb_ssh_key.pub | dev_ssh $user@$host "$cmd"
+    dev_scp $glb_ssh_key $glb_ssh_key.pub $user@$host:\$HOME/.ssh
 
-    if [ "$(whoami)" = "$sudoer" ]; then
-        dev_info "$sudoer exists." >&2
-        return 1
-    fi
+    dev_scp $glb_wkdir/bin/sudoer.bash $user@$host:\$HOME
 
-    home="/home/$sudoer"
+    cmd="\$HOME/sudoer.bash $sudoer"
+    dev_ssh $user@$host "$cmd"
 
-    if ! getent passwd $sudoer; then
-        # Create sudoer
-        useradd --create-home $sudoer
-        echo "$sudoer:dev" | chpasswd
-        usermod -G wheel $sudoer
-    fi
+    cmd="rm -f \$HOME/.ssh/id_rsa* \$HOME/sudoer.bash && echo \"\" > \$HOME/.ssh/authorized_keys"
+    dev_ssh $user@$host "$cmd"
 
-    # No-password
-    if [ "$(whoami)" == "root" ]; then
-        mkdir -p /etc/sudoers.d
-        echo "$sudoer ALL=NOPASSWD: ALL" > /etc/sudoers.d/$sudoer-nopasswd
-    fi
+    dev -v deploy dev $sudoer $host
+    scp ~/dev/etc/dev.conf $sudoer@$host:~/dev/etc/
+    dev -v deploy sys $sudoer $host
 
-    # Private and public key
-    if [ "$HOME" != "$home" ]; then
-        mkdir -m 700 -p $home/.ssh
-        cp $HOME/.ssh/id_rsa* $home/.ssh
-        cat $HOME/.ssh/id_rsa.pub >> $home/.ssh/authorized_keys
-        chown -R $sudoer:$sudoer $home/.ssh
-        chmod 600 $home/.ssh/{authorized_keys,id_rsa*}
-    fi
+    dev_info "done"
 }
