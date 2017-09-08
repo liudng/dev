@@ -37,5 +37,9 @@ cmd_main() {
 
     [ ! -f $wkdir/lib/bootstrap.bash ] && touch $wkdir/lib/bootstrap.bash
 
+    cd $wkdir/usr
+    [ ! -L $wkdir/usr/etc ] && ln -s ../etc etc
+    [ ! -L $wkdir/usr/var ] && ln -s ../var var
+
     dev_verbose "done"
 }

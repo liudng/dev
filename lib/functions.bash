@@ -70,7 +70,9 @@ dev_download() {
         rm -f $tfp
     fi
 
-    [[ -f $tfp ]] && cp $tfp $fp
+    if [[ -f $tfp ]]; then
+        cp $tfp $fp && rm -f $tfp
+    fi
 }
 
 #
@@ -154,7 +156,7 @@ dev_read() {
 #
 dev_verbose() {
     if [ $glb_verbose -eq 1 ]; then
-        dev_info "$@" >&2
+        dev_info "[$(whoami)] $@" >&2
     fi
 
     return 0

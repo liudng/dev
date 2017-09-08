@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-declare -g glb_version="1.8.2"
+declare -g glb_version="1.8.1"
 
 # Run-state:
 # 0:Not-run(readonly)
@@ -252,7 +252,11 @@ dev_exec_remote() {
 dev_exec_local() {
     declare host="127.0.0.1" user="$(whoami)" cmd
     cmd="$host $user"
-    [ $glb_run_sudo -eq 1 ] && cmd="$cmd sudo $glb_base/bin/dev $glb_prj $glb_file"
+    if [[ $glb_run_sudo -eq 1 ]]; then
+        cmd="$cmd sudo $glb_base/bin/dev"
+        [ $glb_verbose -eq 1 ] && cmd="$cmd --verbose"
+        cmd="$cmd $glb_prj $glb_file"
+    fi
     dev_exec $cmd $@
 }
 
@@ -279,7 +283,11 @@ dev_exec() {
         nohup $cmd >>$logout 2>&1 &
         dev_info "PID: $!" >&2
     else
-        $cmd 2>&1 | tee -a $logout
+        if [[ "$1" = "sudo" ]]; then
+            $cmd
+        else
+            $cmd 2>&1 | tee -a $logout
+        fi
     fi
 }
 
