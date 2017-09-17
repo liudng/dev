@@ -84,7 +84,9 @@ dev_extra() {
     declare fp=$glb_wkdir/var/pkg/$1 sp=$glb_wkdir/src/$2
     [ ! -z $glb_wkdir ] && [ ! -z "$2" ] && [ -d $sp ] && rm -rf $sp
     mkdir -p $sp
-    tar --strip-components $3 -xzf $fp -C $sp
+    declare cmd="tar --strip-components $3 -xzf $fp -C $sp"
+    dev_verbose "$cmd"
+    $cmd
 }
 
 #
