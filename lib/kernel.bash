@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-declare -g glb_version="1.9"
+declare -g glb_version="1.9.1"
 
 # Run-state:
 # 0:Not-run(readonly)
@@ -285,6 +285,7 @@ dev_exec_local() {
     if [[ $glb_run_sudo -eq 1 ]]; then
         cmd="$cmd sudo $glb_base/bin/dev"
         [ $glb_verbose -eq 1 ] && cmd="$cmd --verbose"
+        [ "$glb_usr_file" -eq "1" ] && cmd="$cmd --bin"
         cmd="$cmd $glb_prj $glb_file"
     fi
     dev_exec $cmd $@
@@ -298,7 +299,6 @@ dev_exec() {
     declare host="$1"; shift
     declare user="$1"; shift
     declare cmd="$@"
-    [ "$glb_usr_file" -eq "1" ] && cmd="$glb_wkdir/usr/bin/$glb_file $cmd"
     declare desc="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')]"
     declare logout="$glb_wkdir/var/log/$host.log"
 
@@ -319,6 +319,7 @@ dev_exec() {
         if [[ "$1" = "sudo" ]]; then
             $cmd
         else
+            [[ "$1" != "ssh" && "$glb_usr_file" -eq "1" ]] && cmd="$glb_wkdir/usr/bin/$glb_file $cmd"
             $cmd 2>&1 | tee -a $logout
         fi
     fi

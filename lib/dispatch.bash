@@ -102,6 +102,8 @@ dev_etr_completion() {
 }
 
 dev_etr_command() {
+    declare cmd
+
     # Do command function
     [ $glb_run -lt 1 ] && return 0
 
@@ -118,7 +120,11 @@ dev_etr_command() {
         # Run in local machine
 		dev_exec_local $glb_func $@
     else
-        dev_exec_remote $glb_base/bin/dev $glb_prj $glb_file $glb_func $@
+        cmd="$glb_base/bin/dev"
+        [ $glb_verbose -eq 1 ] && cmd="$cmd --verbose"
+        [ "$glb_usr_file" -eq "1" ] && cmd="$cmd --bin"
+
+        dev_exec_remote $cmd $glb_prj $glb_file $glb_func $@
     fi
 }
 
