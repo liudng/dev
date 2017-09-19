@@ -45,7 +45,7 @@ dev_help_options_items() {
     for als in "${!opa_als[@]}"; do
         opt="${opa_als[$als]}"
         [ "$opt" != "$als" ] && sht=", -$als" || sht=""
-        echo -e "  --${opt//_/-}$sht \t ${opa_rem[$opt]}"
+        echo -e "  --${opt//_/-}$sht \t\t ${opa_rem[$opt]}"
     done
 
     # for i in $(compgen -A function); do
@@ -192,12 +192,12 @@ dev_file() {
         dev_help_projects >&2; return 1
     fi
 
-    if ! dev_load_files $glb_wkdir $1; then
-        if [ -f $glb_wkdir/usr/bin/$1 ]; then
-            dev_usr_file="1"
-        else
-            dev_error "Command file not found: $glb_wkdir/cmd/$1.bash" >&2; return 1
+    if [[ "$glb_usr_file" -eq "1" ]]; then
+        if [[ ! -f $glb_wkdir/usr/bin/$1 ]]; then
+            dev_error "Command file not found: $glb_wkdir/usr/bin/$1" >&2; return 1
         fi
+    elif ! dev_load_files $glb_wkdir $1; then
+        dev_error "Command file not found: $glb_wkdir/cmd/$1.bash" >&2; return 1
     fi
 
     glb_file="$1"; return 0
@@ -211,7 +211,7 @@ dev_func() {
         dev_error "\$glb_func has a value: $glb_func" >&2; return 1
     fi
 
-    if [[ "$dev_usr_file" -eq "1" ]]; then
+    if [[ "$glb_usr_file" -eq "1" ]]; then
         return 1
     fi
 
@@ -298,7 +298,7 @@ dev_exec() {
     declare host="$1"; shift
     declare user="$1"; shift
     declare cmd="$@"
-    [ "$dev_usr_file" -eq "1" ] && cmd="$glb_wkdir/usr/bin/$glb_file $cmd"
+    [ "$glb_usr_file" -eq "1" ] && cmd="$glb_wkdir/usr/bin/$glb_file $cmd"
     declare desc="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')]"
     declare logout="$glb_wkdir/var/log/$host.log"
 

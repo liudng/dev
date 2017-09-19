@@ -112,7 +112,7 @@ dev_etr_command() {
 
 	dev_file $@ && shift || return 1
 	dev_func $@ && shift
-    [[ "$dev_usr_file" -eq "0" && -z "$glb_func" ]] && return 1
+    [[ "$glb_usr_file" -eq "0" && -z "$glb_func" ]] && return 1
 
     if [[ $glb_run -le 2 ]]; then
         # Run in local machine

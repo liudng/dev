@@ -26,7 +26,7 @@ opa_fun_help() {
 # Usage:
 #     dev --host <host>
 #
-opa_rem[host]=""
+opa_rem[host]="Run the command on the specified host"
 opa_als[t]="host"
 opa_fun_host() {
     [ -z "$1" ] && echo "Usage: dev --host <host>" >&2 && return 0
@@ -75,7 +75,7 @@ opa_fun_xtrace() {
 # Usage:
 #     dev --user <user>
 #
-opa_rem[user]=""
+opa_rem[user]="Run the command as a user (only for --host)"
 opa_als[user]="user"
 opa_fun_user() {
     [ -z "$1" ] && echo "Usage: dev --user <user>" >&2 && return 0
@@ -126,5 +126,17 @@ opa_rem[verbose]="Produce more output about what the program does"
 opa_als[v]="verbose"
 opa_fun_verbose() {
     glb_verbose="1"
+    return 0
+}
+
+
+#
+# Usage:
+#     dev --bin
+#
+opa_rem[bin]="Load command from usr/bin and usr/sbin"
+opa_als[b]="bin"
+opa_fun_bin() {
+    glb_usr_file="1"
     return 0
 }
