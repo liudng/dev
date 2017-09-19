@@ -2,17 +2,17 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-declare -g glb_version="1.8.1"
+declare -g glb_version="1.9"
 
 # Run-state:
 # 0:Not-run(readonly)
 # 1:Run(alterable,local,default)
 # 2:Run(readonly,local)
 # 3:Run(readonly,remote)
-declare -g glb_run=1 glb_run_dry=0 glb_run_sudo=0 glb_run_daemon=0 glb_verbose=0
+declare -g glb_run="1" glb_run_dry="0" glb_run_sudo="0" glb_run_daemon="0" glb_verbose="0"
 
 # Command file
-declare -g glb_file glb_func glb_user="$USER" glb_prefix glb_etr="command"
+declare -g glb_file glb_func glb_user="$USER" glb_prefix glb_etr="command" glb_usr_file="0"
 
 # For option arguments
 declare -Ag glb_run_nodes opa_rem opa_als
@@ -79,6 +79,9 @@ dev_help_projects() {
     if [ -z $glb_file ]; then
         # List files in project
         dev_help_files $wkdir
+        # List all files in usr/bin,usr/sbin
+        echo "These are the all aviliable <usr-file>s:"; echo
+        echo $(dev_help_usr_files) |tr " " "\n" |sort |column -c $(tput cols)
     else
         # List all cmd-func
         dev_help_functions $wkdir $1
@@ -97,6 +100,26 @@ dev_help_files() {
     declare ret
     ret="$ret $(dev_cmd_files $wkdir/cmd)"
     echo ${ret:1} |tr " " "\n" |sort |column -c $(tput cols); echo
+}
+
+#
+# List all files in usr/bin,usr/sbin
+#
+dev_help_usr_files() {
+    declare ret
+    # List all files in usr/bin
+    if [ -d $glb_wkdir/usr/bin ]; then
+        for filename in $glb_wkdir/usr/bin/**; do
+            ret="$ret $(basename $filename)";
+        done
+    fi
+    # List all files in usr/sbin
+    if [ -d $glb_wkdir/usr/sbin ]; then
+        for filename in $glb_wkdir/usr/sbin/**; do
+            ret="$ret $(basename $filename)";
+        done
+    fi
+    echo "${ret:1}"
 }
 
 #
@@ -123,7 +146,6 @@ dev_help_functions() {
 dev_load_files() {
     declare wkdir="$1" cf="$2"
     [ -f $wkdir/lib/bootstrap.bash ] && . $wkdir/lib/bootstrap.bash
-    [ -f $wkdir/cmd/$cf.var ] && . $wkdir/cmd/$cf.var
     [ ! -f $wkdir/cmd/$cf.bash ] && return 1 || . $wkdir/cmd/$cf.bash
 }
 
@@ -171,7 +193,11 @@ dev_file() {
     fi
 
     if ! dev_load_files $glb_wkdir $1; then
-        dev_error "Command file not found: $glb_wkdir/cmd/$1.bash" >&2; return 1
+        if [ -f $glb_wkdir/usr/bin/$1 ]; then
+            dev_usr_file="1"
+        else
+            dev_error "Command file not found: $glb_wkdir/cmd/$1.bash" >&2; return 1
+        fi
     fi
 
     glb_file="$1"; return 0
@@ -183,6 +209,10 @@ dev_file() {
 dev_func() {
     if [ ! -z "$glb_func" ]; then
         dev_error "\$glb_func has a value: $glb_func" >&2; return 1
+    fi
+
+    if [[ "$dev_usr_file" -eq "1" ]]; then
+        return 1
     fi
 
     # File is command(stand alone)
@@ -268,6 +298,7 @@ dev_exec() {
     declare host="$1"; shift
     declare user="$1"; shift
     declare cmd="$@"
+    [ "$dev_usr_file" -eq "1" ] && cmd="$glb_wkdir/usr/bin/$glb_file $cmd"
     declare desc="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')]"
     declare logout="$glb_wkdir/var/log/$host.log"
 
@@ -278,6 +309,8 @@ dev_exec() {
     [ $glb_run_dry -eq 1 ] && return 0
 
     dev_verbose "$cmd"
+
+    export PATH=$PATH:$glb_wkdir/usr/bin:$glb_wkdir/usr/sbin
 
     if [ $glb_run_daemon -eq 1 ]; then
         nohup $cmd >>$logout 2>&1 &

@@ -64,7 +64,7 @@ dev_etr_options() {
 #     dev_completion
 #
 dev_etr_completion() {
-    declare ret key prj wkdir
+    declare ret key prj wkdir filename
 
     dev_prj $@ && shift
     dev_file $@ && shift
@@ -89,9 +89,10 @@ dev_etr_completion() {
     if [ -z $glb_file ]; then
         # List files in project
         ret="$ret $(dev_cmd_files $wkdir/cmd | tr '\n' ' ')"
+        # List all files in usr/bin,usr/sbin
+        ret="$ret $(dev_help_usr_files)"
     else
         # List all cmd-func
-        [ -f $wkdir/cmd/$glb_file.bash ] && . $wkdir/cmd/$glb_file.bash
         for key in $(compgen -A function); do
             [[ "${key:0:4}" == "cmd_" && "${key:4}" != "main" ]] && ret="$ret ${key:4}"
         done
@@ -111,7 +112,7 @@ dev_etr_command() {
 
 	dev_file $@ && shift || return 1
 	dev_func $@ && shift
-    [ -z "$glb_func" ] && return 1
+    [[ "$dev_usr_file" -eq "0" && -z "$glb_func" ]] && return 1
 
     if [[ $glb_run -le 2 ]]; then
         # Run in local machine
