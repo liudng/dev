@@ -40,12 +40,15 @@ dev_help_options() {
 # List all options
 #
 dev_help_options_items() {
-    declare opt sht als
+    declare opt str sht als com len
 
     for als in "${!opa_als[@]}"; do
         opt="${opa_als[$als]}"
         [ "$opt" != "$als" ] && sht=", -$als" || sht=""
-        echo -e "  --${opt//_/-}$sht \t\t ${opa_rem[$opt]}"
+        str="  --${opt//_/-}$sht"
+        com="\t"
+        [ "${#str}" -lt 15 ] && com="$com\t"
+        echo -e "$str $com ${opa_rem[$opt]}"
     done
 
     # for i in $(compgen -A function); do
@@ -285,7 +288,7 @@ dev_exec_local() {
     if [[ $glb_run_sudo -eq 1 ]]; then
         cmd="$cmd sudo $glb_base/bin/dev"
         [ $glb_verbose -eq 1 ] && cmd="$cmd --verbose"
-        [ "$glb_usr_file" -eq "1" ] && cmd="$cmd --bin"
+        [ "$glb_usr_file" -eq "1" ] && cmd="$cmd --binary"
         cmd="$cmd $glb_prj $glb_file"
     fi
     dev_exec $cmd $@
@@ -311,6 +314,7 @@ dev_exec() {
     dev_verbose "$cmd"
 
     export PATH=$PATH:$glb_wkdir/usr/bin:$glb_wkdir/usr/sbin
+    [ -z "$GOPATH" ] && export GOPATH="$glb_wkdir/usr"
 
     if [ $glb_run_daemon -eq 1 ]; then
         nohup $cmd >>$logout 2>&1 &

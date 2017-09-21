@@ -39,7 +39,7 @@ cmd_main() {
     dev_scp $glb_ssh_key $glb_ssh_key.pub $user@$host:\$HOME/.ssh
     dev_scp $init_tar $user@$host:/tmp
 
-    cmd="mkdir -p \$HOME/$prj/var/log &&"
+    cmd="mkdir -m a+w -p \$HOME/$prj/var/log &&"
     cmd="$cmd tar -xf /tmp/devinit.tar -C \$HOME/$prj &&"
     cmd="$cmd rm -f /tmp/devinit.tar &&"
     cmd="$cmd \$HOME/dev/bin/dev.bash init $prj"

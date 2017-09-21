@@ -18,7 +18,7 @@ cmd_main() {
     fi
 
     mkdir -p $HOME/bin $HOME/.local/{bin,lib,lib64,share}
-    mkdir -p $wkdir/{src,usr} $wkdir/var/{misc,pkg}
+    mkdir -p $wkdir/{src,usr} $wkdir/var/pkg
     mkdir -m a+w -p $wkdir/var/{log,tmp}
 
     if [ ! -f $HOME/.bash_completion ]; then
@@ -39,6 +39,7 @@ cmd_main() {
 
     cd $wkdir/usr
     [ ! -L $wkdir/usr/etc ] && ln -s ../etc etc
+    [ ! -L $wkdir/usr/src ] && ln -s ../src src
     [ ! -L $wkdir/usr/var ] && ln -s ../var var
 
     dev_verbose "done"

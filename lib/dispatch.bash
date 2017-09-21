@@ -122,7 +122,7 @@ dev_etr_command() {
     else
         cmd="$glb_base/bin/dev"
         [ $glb_verbose -eq 1 ] && cmd="$cmd --verbose"
-        [ "$glb_usr_file" -eq "1" ] && cmd="$cmd --bin"
+        [ "$glb_usr_file" -eq "1" ] && cmd="$cmd --binary"
 
         dev_exec_remote $cmd $glb_prj $glb_file $glb_func $@
     fi

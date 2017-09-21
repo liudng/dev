@@ -132,11 +132,11 @@ opa_fun_verbose() {
 
 #
 # Usage:
-#     dev --bin
+#     dev --binary
 #
-opa_rem[bin]="Load command from usr/bin and usr/sbin"
-opa_als[b]="bin"
-opa_fun_bin() {
+opa_rem[binary]="Load command from \$PATH, usr/bin and usr/sbin"
+opa_als[b]="binary"
+opa_fun_binary() {
     glb_usr_file="1"
     return 0
 }
