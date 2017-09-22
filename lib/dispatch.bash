@@ -114,16 +114,23 @@ dev_etr_command() {
 
 	dev_file $@ && shift || return 1
 	dev_func $@ && shift
-    [[ "$glb_usr_file" -eq "0" && -z "$glb_func" ]] && return 1
+    [[ "$glb_binary" -eq "0" && "$glb_system" -eq "0" && -z "$glb_func" ]] && return 1
+
+    cmd="$glb_base/bin/dev"
+    [ $glb_verbose -eq 1 ] && cmd="$cmd --verbose"
+    [ "$glb_binary" -eq "1" ] && cmd="$cmd --binary"
+    [ "$glb_system" -eq "1" ] && cmd="$cmd --system"
+    [ "$glb_environment" -eq "1" ] && cmd="$cmd --environment"
 
     if [[ $glb_run -le 2 ]]; then
-        # Run in local machine
-		dev_exec_local $glb_func $@
+        if [ $glb_run_daemon -eq 1 ]; then
+            nohup $cmd $glb_prj $glb_file $glb_func $@ >/dev/null 2>&1 &
+            dev_info "PID: $!" >&2
+        else
+            # Run in local machine
+            dev_exec_local $glb_func $@
+        fi
     else
-        cmd="$glb_base/bin/dev"
-        [ $glb_verbose -eq 1 ] && cmd="$cmd --verbose"
-        [ "$glb_usr_file" -eq "1" ] && cmd="$cmd --binary"
-
         dev_exec_remote $cmd $glb_prj $glb_file $glb_func $@
     fi
 }

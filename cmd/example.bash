@@ -55,3 +55,15 @@ cmd_echo() {
     dev_warning "This is a warning message."
     dev_error "This is a error message."
 }
+
+cmd_path() {
+    echo "$PATH"
+}
+
+cmd_daemon() {
+    dev_info "Start daemon..."
+    sleep 3
+    dev_info "Daemon output, daemon always running..."
+    sleep 60
+    dev_info "Daemon exit."
+}

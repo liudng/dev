@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-declare -g glb_version="1.9.1"
+declare -g glb_version="1.9.2"
 
 # Run-state:
 # 0:Not-run(readonly)
@@ -12,7 +12,8 @@ declare -g glb_version="1.9.1"
 declare -g glb_run="1" glb_run_dry="0" glb_run_sudo="0" glb_run_daemon="0" glb_verbose="0"
 
 # Command file
-declare -g glb_file glb_func glb_user="$USER" glb_prefix glb_etr="command" glb_usr_file="0"
+declare -g glb_file glb_func glb_user="$USER" glb_prefix glb_etr="command" glb_binary="0" \
+    glb_system="0" glb_environment="0" glb_gopath="0"
 
 # For option arguments
 declare -Ag glb_run_nodes opa_rem opa_als
@@ -195,9 +196,13 @@ dev_file() {
         dev_help_projects >&2; return 1
     fi
 
-    if [[ "$glb_usr_file" -eq "1" ]]; then
+    if [[ "$glb_binary" -eq "1" ]]; then
         if [[ ! -f $glb_wkdir/usr/bin/$1 ]]; then
             dev_error "Command file not found: $glb_wkdir/usr/bin/$1" >&2; return 1
+        fi
+    elif [[ "$glb_system" -eq "1" ]]; then
+        if ! which $1 >/dev/null 2>&1; then
+            dev_error "Command file not found: $1" >&2; return 1
         fi
     elif ! dev_load_files $glb_wkdir $1; then
         dev_error "Command file not found: $glb_wkdir/cmd/$1.bash" >&2; return 1
@@ -214,7 +219,7 @@ dev_func() {
         dev_error "\$glb_func has a value: $glb_func" >&2; return 1
     fi
 
-    if [[ "$glb_usr_file" -eq "1" ]]; then
+    if [[ "$glb_binary" -eq "1" || "$glb_system" -eq "1" ]]; then
         return 1
     fi
 
@@ -288,7 +293,9 @@ dev_exec_local() {
     if [[ $glb_run_sudo -eq 1 ]]; then
         cmd="$cmd sudo $glb_base/bin/dev"
         [ $glb_verbose -eq 1 ] && cmd="$cmd --verbose"
-        [ "$glb_usr_file" -eq "1" ] && cmd="$cmd --binary"
+        [ "$glb_binary" -eq "1" ] && cmd="$cmd --binary"
+        [ "$glb_system" -eq "1" ] && cmd="$cmd --system"
+        [ "$glb_environment" -eq "1" ] && cmd="$cmd --environment"
         cmd="$cmd $glb_prj $glb_file"
     fi
     dev_exec $cmd $@
@@ -313,19 +320,21 @@ dev_exec() {
 
     dev_verbose "$cmd"
 
-    export PATH=$PATH:$glb_wkdir/usr/bin:$glb_wkdir/usr/sbin
-    [ -z "$GOPATH" ] && export GOPATH="$glb_wkdir/usr"
+    if [ $glb_environment -eq "1" ]; then
+        export PATH=$PATH:$glb_wkdir/usr/bin:$glb_wkdir/usr/sbin
+    fi
 
-    if [ $glb_run_daemon -eq 1 ]; then
-        nohup $cmd >>$logout 2>&1 &
-        dev_info "PID: $!" >&2
+    [ "$glb_gopath" -eq "1" ] && export GOPATH="$glb_wkdir/usr"
+
+    if [[ "$1" = "sudo" ]]; then
+        $cmd
     else
-        if [[ "$1" = "sudo" ]]; then
-            $cmd
-        else
-            [[ "$1" != "ssh" && "$glb_usr_file" -eq "1" ]] && cmd="$glb_wkdir/usr/bin/$glb_file $cmd"
-            $cmd 2>&1 | tee -a $logout
+        if [[ "$1" != "ssh" ]]; then
+            [[ "$glb_binary" -eq "1" ]] && cmd="$glb_wkdir/usr/bin/$glb_file $cmd"
+            [[ "$glb_system" -eq "1" ]] && cmd="$glb_file $cmd"
         fi
+
+        $cmd 2>&1 | tee -a $logout
     fi
 }
 

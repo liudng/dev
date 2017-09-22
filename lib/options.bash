@@ -7,7 +7,7 @@
 #     dev --help
 #
 opa_rem[help]="Help topic and usage information"
-opa_als[h]="help"
+opa_als[H]="help"
 opa_fun_help() {
     if [[ $# -le 0 || -z "$1" ]]; then
         dev_run_level 0 || return 0
@@ -27,7 +27,7 @@ opa_fun_help() {
 #     dev --host <host>
 #
 opa_rem[host]="Run the command on the specified host"
-opa_als[t]="host"
+opa_als[h]="host"
 opa_fun_host() {
     [ -z "$1" ] && echo "Usage: dev --host <host>" >&2 && return 0
 
@@ -52,7 +52,7 @@ opa_fun_daemon() {
 #     dev --sudo
 #
 opa_rem[sudo]="Execute a command as another user"
-opa_als[u]="sudo"
+opa_als[sudo]="sudo"
 opa_fun_sudo() {
     glb_run_sudo=1
     return 0
@@ -76,7 +76,7 @@ opa_fun_xtrace() {
 #     dev --user <user>
 #
 opa_rem[user]="Run the command as a user (only for --host)"
-opa_als[user]="user"
+opa_als[u]="user"
 opa_fun_user() {
     [ -z "$1" ] && echo "Usage: dev --user <user>" >&2 && return 0
     glb_user="$1"
@@ -99,7 +99,7 @@ opa_fun_dry_run() {
 #     dev --version
 #
 opa_rem[version]="Output version information and exit"
-opa_als[version]="version"
+opa_als[V]="version"
 opa_fun_version() {
     dev_run_level 0 || return 0
     echo "dev version $glb_version"
@@ -134,9 +134,45 @@ opa_fun_verbose() {
 # Usage:
 #     dev --binary
 #
-opa_rem[binary]="Load command from \$PATH, usr/bin and usr/sbin"
+opa_rem[binary]="Load command from usr/bin and usr/sbin"
 opa_als[b]="binary"
 opa_fun_binary() {
-    glb_usr_file="1"
+    glb_binary="1"
+    return 0
+}
+
+
+#
+# Usage:
+#     dev --system
+#
+opa_rem[system]="Load command from \$PATH"
+opa_als[s]="system"
+opa_fun_system() {
+    glb_system="1"
+    return 0
+}
+
+
+#
+# Usage:
+#     dev --environment
+#
+opa_rem[environment]="Add usr/bin and usr/sbin to \$PATH"
+opa_als[e]="environment"
+opa_fun_environment() {
+    glb_environment="1"
+    return 0
+}
+
+
+#
+# Usage:
+#     dev --gopath
+#
+opa_rem[gopath]="Set \$GOPATH to \$glb_wkdir/usr"
+opa_als[gopath]="gopath"
+opa_fun_gopath() {
+    glb_gopath="1"
     return 0
 }
