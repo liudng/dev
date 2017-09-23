@@ -18,7 +18,7 @@ cmd_main() {
     fi
 
     mkdir -p $HOME/bin $HOME/.local/{bin,lib,lib64,share}
-    mkdir -p $wkdir/{src,usr} $wkdir/var/pkg
+    mkdir -p $wkdir/{bin,cmd,etc,lib,src,usr} $wkdir/var/pkg
     mkdir -m a+w -p $wkdir/var/{log,tmp}
 
     if [ ! -f $HOME/.bash_completion ]; then

@@ -25,7 +25,8 @@ echo "$sudoer ALL=NOPASSWD: ALL" > /etc/sudoers.d/$sudoer-nopasswd
 
 # Private and public key
 mkdir -m 700 -p $home/.ssh
-cp $HOME/.ssh/id_rsa* $home/.ssh
-cat $HOME/.ssh/id_rsa.pub > $home/.ssh/authorized_keys
+[ -f $HOME/.ssh/id_rsa ] && cp $HOME/.ssh/id_rsa* $home/.ssh
+[ -f $HOME/.ssh/id_rsa.pub ] && cat $HOME/.ssh/id_rsa.pub > $home/.ssh/authorized_keys
 chown -R $sudoer:$sudoer $home/.ssh
-chmod 600 $home/.ssh/{authorized_keys,id_rsa*}
+[ -f $HOME/.ssh/{authorized_keys ] && chmod 600 $home/.ssh/authorized_keys
+[ -f $HOME/.ssh/id_rsa ] && chmod 600 $home/.ssh/id_rsa*
