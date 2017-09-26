@@ -40,6 +40,12 @@ cmd_main() {
         cd $wkdir/bin && ln -s -f -T $prj.bash $prj
     fi
 
+    if [ ! -f $wkdir/.gitignore ]; then
+        echo "/src" > $wkdir/.gitignore
+        echo "/usr" >> $wkdir/.gitignore
+        echo "/var" >> $wkdir/.gitignore
+    fi
+
     [ ! -L $HOME/bin/$prj ] && ln -s $wkdir/bin/$prj.bash $HOME/bin/$prj
 
     [ ! -f $wkdir/lib/bootstrap.bash ] && touch $wkdir/lib/bootstrap.bash
