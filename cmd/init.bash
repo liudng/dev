@@ -33,6 +33,13 @@ cmd_main() {
     grep -q "complete -F _dev_init_completion $prj" $HOME/.bash_completion || \
         echo "complete -F _dev_init_completion $prj" >> $HOME/.bash_completion
 
+    if [ ! -f $wkdir/bin/$prj.bash ]; then
+        echo "#!/bin/bash" > $wkdir/bin/$prj.bash
+        echo "dev $prj \$@" >> $wkdir/bin/$prj.bash
+        chmod a+x $wkdir/bin/$prj.bash
+        cd $wkdir/bin && ln -s -f -T $prj.bash $prj
+    fi
+
     [ ! -L $HOME/bin/$prj ] && ln -s $wkdir/bin/$prj.bash $HOME/bin/$prj
 
     [ ! -f $wkdir/lib/bootstrap.bash ] && touch $wkdir/lib/bootstrap.bash
