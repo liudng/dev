@@ -37,16 +37,16 @@ cmd_main() {
         echo "#!/bin/bash" > $wkdir/bin/$prj.bash
         echo "dev $prj \$@" >> $wkdir/bin/$prj.bash
         chmod a+x $wkdir/bin/$prj.bash
-        cd $wkdir/bin && ln -s -f -T $prj.bash $prj
     fi
+
+    cd $wkdir/bin && ln -s -f -T $prj.bash $prj
+    [ ! -L $HOME/bin/$prj ] && ln -s $wkdir/bin/$prj.bash $HOME/bin/$prj
 
     if [ ! -f $wkdir/.gitignore ]; then
         echo "/src" > $wkdir/.gitignore
         echo "/usr" >> $wkdir/.gitignore
         echo "/var" >> $wkdir/.gitignore
     fi
-
-    [ ! -L $HOME/bin/$prj ] && ln -s $wkdir/bin/$prj.bash $HOME/bin/$prj
 
     [ ! -f $wkdir/lib/bootstrap.bash ] && touch $wkdir/lib/bootstrap.bash
 
