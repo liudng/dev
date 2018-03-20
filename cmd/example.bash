@@ -26,6 +26,10 @@ cmd_stdout_and_stderr() {
     exit 1
 }
 
+cmd_loop() {
+    for file in $(find -type f); do sed -i 's/\\Data\\/\\DataProvider\\/' $file; done
+}
+
 cmd_associative_array_looping() {
     declare -A array=(
         [foo]=bar1
