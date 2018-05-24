@@ -2,12 +2,14 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+declare -gr dev_global_ssh_key="$HOME/.ssh/$cfg_ssh_key"
+
 #
 # Usage:
 #     dev_scp <user-host> <command>
 #
 dev_scp() {
-    declare cmd="scp -i $glb_ssh_key -o StrictHostKeyChecking=no $@"
+    declare cmd="scp -i $dev_global_ssh_key -o StrictHostKeyChecking=no $@"
     dev_verbose "$cmd"
     $cmd
 }
@@ -17,25 +19,7 @@ dev_scp() {
 #     dev_ssh <user-host> <command>
 #
 dev_ssh() {
-    declare cmd="ssh -i $glb_ssh_key -o StrictHostKeyChecking=no $@"
-    dev_verbose "$cmd"
-    $cmd
-}
-
-#
-# Usage:
-#     dev_dnf
-#
-dev_dnf() {
-    # -4     Resolve to IPv4 addresses only.
-    # --allowerasing
-    #        Allow  erasing  of  installed  packages  to  resolve dependencies.
-    declare cmd="sudo dnf -y --allowerasing -4 $@"
-    if ! command -v dnf > /dev/null; then
-        # Compatible with CentOS 6.x/7.x
-        cmd="sudo yum -y $@"
-    fi
-
+    declare cmd="ssh -i $dev_global_ssh_key -o StrictHostKeyChecking=no $@"
     dev_verbose "$cmd"
     $cmd
 }
@@ -49,7 +33,7 @@ dev_download() {
     [ -z $2 ] && local fname=$(basename $1) || local fname=$2
     [ -z $fname ] && return 1
 
-    declare opts fp=$glb_wkdir/var/pkg/$fname tfp=/tmp/$fname
+    declare opts fp=$glb_wkdir/var/downloads/$fname tfp=/tmp/$fname
 
     if [[ -f $fp ]]; then
         dev_verbose "File exists: $fp"
@@ -81,7 +65,7 @@ dev_download() {
 #
 dev_extra() {
     [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] && echo "Usage: dev_extra <fname> <strip-components>" >&2 && return 1
-    declare fp=$glb_wkdir/var/pkg/$1 sp=$glb_wkdir/src/$2
+    declare fp=$glb_wkdir/var/downloads/$1 sp=$glb_wkdir/src/$2
     [ ! -z $glb_wkdir ] && [ ! -z "$2" ] && [ -d $sp ] && rm -rf $sp
     mkdir -p $sp
     declare cmd="tar --strip-components $3 -xzf $fp -C $sp"
@@ -95,11 +79,11 @@ dev_extra() {
 #     dev_dextra <url> <fname> <strip-components>
 #
 #     example:
-#         Download to var/pkg/nginx-1.2.0.tar.gz
+#         Download to var/downloads/nginx-1.2.0.tar.gz
 #         Extra to src/nginx-1.2.0
 #         dev_dextra http://xxx.com/v1.2.0.tar.gz nginx-1.2.0.tar.gz 1
 #
-dev_dextra() {
+dev_download_and_extra() {
     [[ $# -lt 3 ]] && echo "Usage: dev_dextra <url> <fname> <strip-components>" >&2 && return 1
     declare url="$1" fname="$2"
     declare exdir="$(dev_basename $fname)"
@@ -107,59 +91,3 @@ dev_dextra() {
     dev_extra $fname $exdir $3
 }
 
-#
-# Red
-#
-dev_error() {
-    printf "\e[31m" && echo "$@" && printf "\e[m"
-}
-
-#
-# Green
-#
-dev_success() {
-    printf "\e[32m" && echo "$@" && printf "\e[m"
-}
-
-#
-# Yellow
-#
-dev_warning() {
-    printf "\e[33m" && echo "$@" && printf "\e[m"
-}
-
-#
-# Blue
-#
-dev_info() {
-    printf "\e[34m" && echo "$@" && printf "\e[m"
-}
-
-#
-# dev_read prevents collapsing of empty fields
-# https://stackoverflow.com/questions/21109036/select-mysql-query-with-bash
-#
-dev_read() {
-    local input
-
-    IFS= read -r input || return $?
-
-    while (( $# > 1 )); do
-        IFS= read -r "$1" <<< "${input%%[$IFS]*}"
-        input="${input#*[$IFS]}"
-        shift
-    done
-
-    IFS= read -r "$1" <<< "$input"
-}
-
-#
-# Verbose
-#
-dev_verbose() {
-    if [ $glb_verbose -eq 1 ]; then
-        dev_info "[$(whoami)] $@" >&2
-    fi
-
-    return 0
-}

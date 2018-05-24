@@ -5,19 +5,14 @@
 
 # Use readonly or declare -r to ensure they're read only.
 
-# Nodes
-# declare -Agr cfg_nodes=(
-#     [192.168.122.101]=ld
-# )
-
 # Projects
-# declare -Agr cfg_projects=(
+# declare -Agr dev_conf_projects=(
 #     [sys]=/path/to/sys-project
 #     [app]=/path/to/app-project
 # )
 
 # Private key path
-# readonly cfg_ssh_key="id_rsa"
+readonly dev_conf_ssh_key="id_rsa"
 
 # [protocol://][user:password@]proxyhost[:port]
 # readonly cfg_proxy=""

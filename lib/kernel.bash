@@ -1,352 +1,56 @@
-# Copyright 2016 The dev Authors. All rights reserved.
+# Copyright 2017 The dev Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-declare -g glb_version="1.9.2"
-
-# Run-state:
-# 0:Not-run(readonly)
-# 1:Run(alterable,local,default)
-# 2:Run(readonly,local)
-# 3:Run(readonly,remote)
-declare -g glb_run="1" glb_run_dry="0" glb_run_sudo="0" glb_run_daemon="0" glb_verbose="0"
-
-# Command file
-declare -g glb_file glb_func glb_user="$USER" glb_prefix glb_etr="command" glb_binary="0" \
-    glb_system="0" glb_environment="0" glb_gopath="0"
-
-# For option arguments
-declare -Ag glb_run_nodes opa_rem opa_als
-
 #
-# Usage information.
+# Red
 #
-dev_help_usage() {
-    declare files="<cmd-file>"
-    [ ! -z "$1" ] && files="$1"
-
-    echo "Usage: dev [--[options [args]]] [prj] $files <cmd-func> [cmd-args] ..."
-    echo "       dev [--[options [args]]] [args] ..."; echo
+dev_error() {
+    printf "\e[31m" && echo "$@" && printf "\e[m"
 }
 
 #
-# List all options
+# Green
 #
-dev_help_options() {
-    echo "Optional arguments:"; echo
-    dev_help_options_items |sort; echo
+dev_success() {
+    printf "\e[32m" && echo "$@" && printf "\e[m"
 }
 
 #
-# List all options
+# Yellow
 #
-dev_help_options_items() {
-    declare opt str sht als com len
+dev_warning() {
+    printf "\e[33m" && echo "$@" && printf "\e[m"
+}
 
-    for als in "${!opa_als[@]}"; do
-        opt="${opa_als[$als]}"
-        [ "$opt" != "$als" ] && sht=", -$als" || sht=""
-        str="  --${opt//_/-}$sht"
-        com="\t"
-        [ "${#str}" -lt 15 ] && com="$com\t"
-        echo -e "$str $com ${opa_rem[$opt]}"
+#
+# Blue
+#
+dev_info() {
+    printf "\e[34m" && echo "$@" && printf "\e[m"
+}
+
+#
+# Verbose
+#
+dev_verbose() {
+    [ $dev_global_verbose -eq 1 ] && dev_info "[$(whoami)] $@" >&2 || true
+}
+
+#
+# dev_read prevents collapsing of empty fields
+# https://stackoverflow.com/questions/21109036/select-mysql-query-with-bash
+#
+dev_read() {
+    local input
+
+    IFS= read -r input || return $?
+
+    while (( $# > 1 )); do
+        IFS= read -r "$1" <<< "${input%%[$IFS]*}"
+        input="${input#*[$IFS]}"
+        shift
     done
 
-    # for i in $(compgen -A function); do
-    #     if [[ "${i:0:8}" == "opa_fun_" ]]; then
-    #         opt="${i:8}"
-    #     fi
-    # done
-}
-
-#
-# Usage:
-#     dev_help_projects
-#
-dev_help_projects() {
-    declare ret prj wkdir
-
-    if [ "$glb_prj" == "dev" ]; then
-        wkdir=$glb_base
-        if [ -z $glb_file ]; then
-            # List all projects
-            echo "These are the all aviliable <prj>s:"; echo
-            for prj in "${!cfg_projects[@]}"; do
-                ret="$ret $prj"
-            done
-            echo ${ret:1} |tr " " "\n" |sort |column -c $(tput cols); echo
-        fi
-    else
-        wkdir=$glb_wkdir
-    fi
-
-    if [ -z $glb_file ]; then
-        # List files in project
-        dev_help_files $wkdir
-        # List all files in usr/bin,usr/sbin
-        echo "These are the all aviliable <usr-file>s:"; echo
-        echo $(dev_help_usr_files) |tr " " "\n" |sort |column -c $(tput cols)
-    else
-        # List all cmd-func
-        dev_help_functions $wkdir $1
-    fi
-}
-
-#
-# List all command files.
-#
-dev_help_files() {
-    declare wkdir
-    [ -z "$1" ] && wkdir="$glb_wkdir" || wkdir="$1"
-    [ -z $wkdir ] && return 0
-    echo "These are the all aviliable <cmd-file>s:"; echo
-
-    declare ret
-    ret="$ret $(dev_cmd_files $wkdir/cmd)"
-    echo ${ret:1} |tr " " "\n" |sort |column -c $(tput cols); echo
-}
-
-#
-# List all files in usr/bin,usr/sbin
-#
-dev_help_usr_files() {
-    declare ret
-    # List all files in usr/bin
-    if [ -d $glb_wkdir/usr/bin ]; then
-        for filename in $glb_wkdir/usr/bin/**; do
-            ret="$ret $(basename $filename)";
-        done
-    fi
-    # List all files in usr/sbin
-    if [ -d $glb_wkdir/usr/sbin ]; then
-        for filename in $glb_wkdir/usr/sbin/**; do
-            ret="$ret $(basename $filename)";
-        done
-    fi
-    echo "${ret:1}"
-}
-
-#
-# List all functions of included <cmd-file>s.
-#
-dev_help_functions() {
-    declare wkdir
-    [ -z "$1" ] && wkdir="$glb_wkdir" || wkdir="$1"
-    echo "These are the all aviliable <cmd-func>s:"; echo
-
-    for i in $(compgen -A function); do
-        if [[ "${i:0:4}" == "cmd_" ]]; then
-            echo -e "  ${i:4} \t in $wkdir/cmd/$glb_file:$i()"
-        fi
-    done
-
-    echo
-}
-
-#
-# Usage:
-#     dev_load_files <prj> <cmd-file>
-#
-dev_load_files() {
-    declare wkdir="$1" cf="$2"
-    [ -f $wkdir/lib/bootstrap.bash ] && . $wkdir/lib/bootstrap.bash
-    [ ! -f $wkdir/cmd/$cf.bash ] && return 1 || . $wkdir/cmd/$cf.bash
-}
-
-#
-# Recursively process subdirectories
-#
-dev_cmd_files() {
-    for i in $(ls $1); do
-        if [[ -d $1/$i ]]; then
-            dev_cmd_files $1/$i $i/
-        elif [[ "${i: -5}" == ".bash" ]]; then
-            echo "$2${i:0:-5}"
-        fi
-    done
-}
-
-#
-# Usage:
-#     dev_prj <prj>
-#
-dev_prj() {
-    [[ ! -z "$glb_prj" ]] && return 1
-
-    if [ "$1" == "dev" ]; then
-        declare -gr glb_prj="dev" glb_wkdir=$glb_base; return 0
-    fi
-
-    if [ $# -ge 1 ] && [ -n "${cfg_projects[$1]+1}" ]; then
-        declare -gr glb_prj="$1" glb_wkdir=${cfg_projects[$1]}; return 0
-    fi
-
-	declare -gr glb_prj="dev" glb_wkdir=$glb_base; return 1
-}
-
-#
-# Prepare command files
-# Usage:
-#     dev_file <cmd-file>
-#
-dev_file() {
-    [ ! -z "$glb_file"] && return 1
-
-    if [[ $# -le 0 || -z "$1" ]]; then
-        dev_help_projects >&2; return 1
-    fi
-
-    if [[ "$glb_binary" -eq "1" ]]; then
-        if [[ ! -f $glb_wkdir/usr/bin/$1 ]]; then
-            dev_error "Command file not found: $glb_wkdir/usr/bin/$1" >&2; return 1
-        fi
-    elif [[ "$glb_system" -eq "1" ]]; then
-        if ! which $1 >/dev/null 2>&1; then
-            dev_error "Command file not found: $1" >&2; return 1
-        fi
-    elif ! dev_load_files $glb_wkdir $1; then
-        dev_error "Command file not found: $glb_wkdir/cmd/$1.bash" >&2; return 1
-    fi
-
-    glb_file="$1"; return 0
-}
-
-#
-# Set execution function
-#
-dev_func() {
-    if [ ! -z "$glb_func" ]; then
-        dev_error "\$glb_func has a value: $glb_func" >&2; return 1
-    fi
-
-    if [[ "$glb_binary" -eq "1" || "$glb_system" -eq "1" ]]; then
-        return 1
-    fi
-
-    # File is command(stand alone)
-    if [[ "$(declare -F cmd_main)" == "cmd_main" ]]; then
-        glb_func="cmd_main"; return 1
-    fi
-
-    if [[ $# -le 0 || -z "$1" ]]; then
-        dev_error "Missing command function" >&2; echo >&2; dev_help_functions >&2; return 1
-    fi
-
-    declare func=${1/-/_}
-
-    [[ "${func:0:4}" == "cmd_" || -z "$glb_file" ]] || func="cmd_$func"
-    if [[ "$(declare -F $func)" != "$func" ]]; then
-        dev_error "Command not found: $func" >&2; return 1
-    fi
-
-    glb_func="$func"
-}
-
-#
-# Set run state
-# Run-state:
-# 0:Not-run(readonly)
-# 1:Run(alterable,local,default)
-# 2:Run(readonly,local)
-# 3:Run(readonly,remote)
-#
-dev_run_level() {
-    if [[ "$glb_run" -eq 1 ]]; then
-        glb_run="$1"; return 0
-    else
-        dev_error "\$glb_run has a value: $glb_run" >&2; return 1
-    fi
-}
-
-
-#
-# Execute a command from all nodes.
-# Usage:
-#     dev_exec_remote dev [options] <cmd-file> <cmd-func> [cmd-args]
-#
-dev_exec_remote() {
-    if [[ "${#glb_run_nodes[@]}" -le 0 ]]; then
-        dev_error "Nodes is empty" >&2; return 1
-    fi
-
-    declare cmd host
-
-    for host in "${!glb_run_nodes[@]}"; do
-        cmd="ssh -i $glb_ssh_key -o StrictHostKeyChecking=no $glb_user@$host"
-        [ $glb_run_sudo -eq 1 ] && cmd="$cmd sudo"
-
-        set +o errexit
-        dev_exec $host $glb_user $cmd $@
-        set -o errexit
-
-        echo
-    done
-}
-
-#
-# Usage:
-#     dev_exec_local <command> <arguments>...
-#
-dev_exec_local() {
-    declare host="127.0.0.1" user="$(whoami)" cmd
-    cmd="$host $user"
-    if [[ $glb_run_sudo -eq 1 ]]; then
-        cmd="$cmd sudo $glb_base/bin/dev"
-        [ $glb_verbose -eq 1 ] && cmd="$cmd --verbose"
-        [ "$glb_binary" -eq "1" ] && cmd="$cmd --binary"
-        [ "$glb_system" -eq "1" ] && cmd="$cmd --system"
-        [ "$glb_environment" -eq "1" ] && cmd="$cmd --environment"
-        cmd="$cmd $glb_prj $glb_file"
-    fi
-    dev_exec $cmd $@
-}
-
-#
-# Usage:
-#     dev_exec <host> <user> <command> <arguments>...
-#
-dev_exec() {
-    declare host="$1"; shift
-    declare user="$1"; shift
-    declare cmd="$@"
-    declare desc="[$user@$host $(date '+%Y-%m-%d %H:%M:%S')]"
-    declare logout="$glb_wkdir/var/log/$host.log"
-
-    echo "$desc" >>$logout
-    echo "$cmd" >>$logout
-    chmod a+wx $logout
-
-    [ $glb_run_dry -eq 1 ] && return 0
-
-    dev_verbose "$cmd"
-
-    if [ $glb_environment -eq "1" ]; then
-        export PATH=$PATH:$glb_wkdir/usr/bin:$glb_wkdir/usr/sbin
-    fi
-
-    [ "$glb_gopath" -eq "1" ] && export GOPATH="$glb_wkdir/usr"
-
-    if [[ "$1" = "sudo" ]]; then
-        $cmd
-    else
-        if [[ "$1" != "ssh" ]]; then
-            [[ "$glb_binary" -eq "1" ]] && cmd="$glb_wkdir/usr/bin/$glb_file $cmd"
-            [[ "$glb_system" -eq "1" ]] && cmd="$glb_file $cmd"
-        fi
-
-        $cmd 2>&1 | tee -a $logout
-    fi
-}
-
-#
-#
-#
-dev_basename() {
-    [ $# -lt 1 ] && return 1
-    declare str="$(basename $1)"
-    case "$str" in
-        *.tar.gz) echo "${str:0:-7}" ;;
-        *.tar.bz2) echo "${str:0:-8}" ;;
-        *) echo "${str%.*}" ;;
-    esac
+    IFS= read -r "$1" <<< "$input"
 }
