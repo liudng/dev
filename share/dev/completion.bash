@@ -9,7 +9,7 @@
 _dev_init_completion() {
     # Pointer to current completion word.
     # By convention, it's named "cur" but this isn't strictly necessary.
-    local arr cur opts
+    local arr cmd cur opts
 
     # COMPREPLY: array holds the completion results that gets displayed after
     #             pressing [TAB][TAB]
@@ -21,13 +21,12 @@ _dev_init_completion() {
     #             words on command line can be accessed.
     cur=${COMP_WORDS[COMP_CWORD]}
 
-    if [ "${cur:0:1}" == "-" ]; then
-        opts=$(dev ":options" 2>/dev/null) #
-    else
-        arr=(${COMP_WORDS[@]}) && unset arr[COMP_CWORD]
-        [ "${arr[0]}" == "dev" ] && unset arr[0]
-        opts=$(dev ":completion" ":$cur" "${arr[@]}" 2>/dev/null)
-    fi
+    arr=(${COMP_WORDS[@]}) && unset arr[COMP_CWORD]
+
+    cmd="${arr[0]}" && unset arr[0]
+
+    # opts=$($cmd --completion="$cur" "${arr[@]}" 2>/dev/null)
+    opts=$($cmd --completion="$cur" "${arr[@]}" 2>/tmp/dev-completion.log)
 
     # compgen : -W holds the possible completions and the respective argument get
     #           chosen based on the $current_arg.

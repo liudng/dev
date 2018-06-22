@@ -1,12 +1,12 @@
-# dev - Help developers effectively manage projects
+# dev - Lightweight Shell Scripts Manager
 
 [![License](https://img.shields.io/badge/license-BSD-blue.svg?style=flat)](https://github.com/liudng/dev/blob/master/LICENSE)
 
-For large and complex software projects need to setup the development 
-environment, including software installation dependents,  clone source code 
+For large and complex software projects need to setup the development
+environment, including software installation dependents,  clone source code
 repository, manage a large number of scripts, custom configuration files, and so on.
 
-How to make these things easier, it is [dev](https://github.com/liudng/dev)'s goal. 
+How to make these things easier, it is [dev](https://github.com/liudng/dev)'s goal.
 
 > This documentation assumes you are already familiar with Bash. If you do not know anything about Bash, consider familiarizing yourself with the general terminology and features of Bash before continuing.
 
@@ -19,10 +19,8 @@ How to make these things easier, it is [dev](https://github.com/liudng/dev)'s go
 ## Featues
 
 * Writen in pure bash.
-* Quickly initialize a new development environment.
-* Consistent directory structure for multiple projects.
-* All commands are stored in the cmd directory and can be reused.
-* Manage several aspects of a project, including configurations, repositories and documentation etc.
+* Modular.
+* Lightweight.
 
 ## Installation
 
@@ -60,8 +58,8 @@ cat ~/dev/lib/completion.bash >> ~/.bash_completion
 dev [-options] [project] <cmd-file> <cmd-func> [arguments...]
 ```
 
-[dev](https://github.com/liudng/dev)'s custom commands are saved in the cmd directory, and the file extension 
-must be `.bash`, In the help topic it is named **cmd-file**. In each command 
+[dev](https://github.com/liudng/dev)'s custom commands are saved in the cmd directory, and the file extension
+must be `.bash`, In the help topic it is named **cmd-file**. In each command
 file, **cmd-func** is prefixed with *cmd_*.
 
 ## Example

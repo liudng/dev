@@ -1,5 +1,5 @@
-dev_import dev kernel
-dev_import dev kernel
+dev_import dev io
+dev_import dev io
 
 cmd_test() {
     dev_info "This is a info message."

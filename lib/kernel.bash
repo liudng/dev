@@ -5,19 +5,26 @@
 # dev_kernel_<xxx>: framework functions;
 # cmd_<xxx>: command functions;
 # <project>_<xxx>: library functions;
-#
+
 # dev_global_<xxx>: global variables;
 # dev_conf_<xxx>: configuration variables;
 
 declare -gA dev_global_imports=()
 
+# Display a error message in the output
 dev_kernel_error() {
-    printf "\e[35m" && echo "$@" && printf "\e[m" >&2
+    printf "\e[35m" >&2 && echo "$@" >&2 && printf "\e[m" >&2
     exit 1
 }
 
+# Display a normal message in the output
 dev_kernel_info() {
     echo "$@" >&2
+}
+
+dev_kernel_completion() {
+    dev_kernel_info "$@"
+    [[ "$dev_global_completion" -eq "1" ]] && echo "$@" | tr '\n' ' '
 }
 
 # Importing an entire command file in a particular project
@@ -49,6 +56,8 @@ dev_import() {
     dev_global_imports[$import_key]="1"
 }
 
+# Load the function from the lib directory and run it.
+# Usage: dev_run <project> <command-file> <command-function> [arguments]
 dev_run() {
     if [[ $# -lt 3 ]]; then
         dev_kernel_error "Incorrect run syntax"
