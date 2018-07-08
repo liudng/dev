@@ -4,6 +4,8 @@
 
 declare -gr dev_global_ssh_key="$HOME/.ssh/$cfg_ssh_key"
 
+dev_import dev io
+
 #
 # Usage:
 #     dev_scp <user-host> <command>
@@ -33,7 +35,7 @@ dev_download() {
     [ -z $2 ] && local fname=$(basename $1) || local fname=$2
     [ -z $fname ] && return 1
 
-    declare opts fp=$glb_wkdir/var/downloads/$fname tfp=/tmp/$fname
+    declare opts fp=$dev_global_wkdir/var/downloads/$fname tfp=/tmp/$fname
 
     if [[ -f $fp ]]; then
         dev_verbose "File exists: $fp"
@@ -65,8 +67,8 @@ dev_download() {
 #
 dev_extra() {
     [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] && echo "Usage: dev_extra <fname> <strip-components>" >&2 && return 1
-    declare fp=$glb_wkdir/var/downloads/$1 sp=$glb_wkdir/src/$2
-    [ ! -z $glb_wkdir ] && [ ! -z "$2" ] && [ -d $sp ] && rm -rf $sp
+    declare fp=$dev_global_wkdir/var/downloads/$1 sp=$dev_global_wkdir/src/$2
+    [ ! -z $dev_global_wkdir ] && [ ! -z "$2" ] && [ -d $sp ] && rm -rf $sp
     mkdir -p $sp
     declare cmd="tar --strip-components $3 -xzf $fp -C $sp"
     dev_verbose "$cmd"

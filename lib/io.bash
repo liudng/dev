@@ -34,7 +34,7 @@ dev_info() {
 # Verbose
 #
 dev_verbose() {
-    [ $dev_global_verbose -eq 1 ] && dev_info "[$(whoami)] $@" >&2 || true
+    [[ ! -z $dev_global_verbose && $dev_global_verbose -eq 1 ]] && dev_info "[$(whoami)] $@" >&2 || true
 }
 
 #
