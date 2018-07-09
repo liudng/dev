@@ -23,6 +23,7 @@ dev_kernel_optional_arguments() {
             ;;
         --completion[^\ ]*)
             dev_global_completion="1"
+            carry="$1"
             ;;
         --sudo)
             declare -gr dev_global_sudo="1"
@@ -52,7 +53,7 @@ declare -gr dev_global_self="$(realpath $0)"
 # The dev execution base path
 declare -gr dev_global_base="$(dirname $(dirname $dev_global_self))"
 
-#
+# Disable completion default
 declare -g dev_global_completion="0"
 
 # Load kernel functions
@@ -74,6 +75,12 @@ if [[ ! -n "${dev_conf_projects[$dev_global_project]+1}" ]]; then
 fi
 
 declare -gr dev_global_wkdir="${dev_conf_projects[$dev_global_project]}"
+
+# Load working project configuration file
+declare -gr dev_working_conf="$dev_global_wkdir/etc/$dev_global_project.conf"
+if [[ -f "$dev_working_conf" ]]; then
+    source "$dev_working_conf"
+fi
 
 declare -g dev_global_carry=""
 

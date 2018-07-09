@@ -7,8 +7,9 @@
 
 # Projects
 # declare -Agr dev_conf_projects=(
-#     [sys]=/path/to/sys-project
-#     [app]=/path/to/app-project
+#     [dev]=/path/to/dev
+#     [sys]=/path/to/sys
+#     [app]=/path/to/app
 # )
 
 # Private key path

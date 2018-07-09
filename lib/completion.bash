@@ -11,10 +11,11 @@ dev_kernel_projects() {
 
 # Recursively processing subdirectories
 # $1: Root directory for scan
+# $2: Relative path based on root directory
 dev_kernel_command_files() {
     for i in $(ls $1); do
         if [[ -d $1/$i ]]; then
-            dev_kernel_command_files $1/$i $2$i/
+            dev_kernel_command_files "$1/$i" "$2$i/"
         elif [[ "${i: -5}" == ".bash" ]]; then
             echo "$2${i:0:-5}"
         fi
@@ -28,5 +29,3 @@ dev_kernel_command_functions() {
         fi
     done
 }
-
-

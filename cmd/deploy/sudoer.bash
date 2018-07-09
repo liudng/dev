@@ -25,7 +25,7 @@
 #        sys fedora/vbox init xorg
 #
 cmd_main() {
-    [ $# -lt 2 ] && dev_info "Usage: dev sudoer <sudoer> <host>" >&2 && return 1
+    [ $# -lt 2 ] && dev_info "Usage: dev deploy/sudoer <sudoer> <host>" >&2 && return 1
 
     declare cmd user="root" host="$2" sudoer="$1"
 
