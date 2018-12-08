@@ -43,13 +43,13 @@ Create a configuration file:
 cp ~/dev/etc/dev.conf.example ~/dev/etc/dev.conf
 ```
 
-The installation is complete, enter `dev --help` at the command line to see how to use it.
-
 If you want to use the command auto completion, run the following command:
 
 ```sh
 cat ~/dev/share/completion.bash >> ~/.bash_completion
 ```
+
+The installation is complete, enter `dev --help` at the command line to see how to use it.
 
 ## Usage
 
@@ -64,6 +64,20 @@ file, **cmd-function** is prefixed with *cmd_*.
 
 ## Example
 
+Type the folloing command:
+
+```sh
+dev examples/example helloworld
+```
+
+Output:
+
+```sh
+Hello world!
+```
+
+## Custom Command Example
+
 Create a new command to copy the following text to the file ~/dev/cmd/demo.bash:
 
 ```sh
@@ -76,6 +90,12 @@ And then type the following command to run:
 
 ```sh
 dev demo helloworld
+```
+
+Output:
+
+```sh
+Hello world!
 ```
 
 In the above command, **demo** is cmd-file. **helloworld** is cmd-function.

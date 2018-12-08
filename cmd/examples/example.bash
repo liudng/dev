@@ -5,6 +5,10 @@
 dev_import dev file
 
 cmd_helloworld() {
+    echo "Hello World!"
+}
+
+cmd_sleep() {
     echo "$(whoami)"
     for i in `seq 1 3`; do
         sleep 1

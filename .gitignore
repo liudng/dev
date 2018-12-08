@@ -4,7 +4,6 @@
 **.swp
 tags
 /*.sublime-*
-/bin/dev
 /etc/dev.conf
 /src
 /usr
