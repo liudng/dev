@@ -1,4 +1,4 @@
-# dev - Lightweight Shell Scripts Manager
+# dev - Lightweight Bash Scripts Manager
 
 [![License](https://img.shields.io/badge/license-BSD-blue.svg?style=flat)](https://github.com/liudng/dev/blob/master/LICENSE)
 
@@ -6,15 +6,9 @@ For large and complex software projects need to setup the development
 environment, including software installation dependents,  clone source code
 repository, manage a large number of scripts, custom configuration files, and so on.
 
-How to make these things easier, it is [dev](https://github.com/liudng/dev)'s goal.
+The goal of `dev` is to make these things easier.
 
 > This documentation assumes you are already familiar with Bash. If you do not know anything about Bash, consider familiarizing yourself with the general terminology and features of Bash before continuing.
-
-## Why use dev?
-
-* Keep all projects with the same directory structure.
-* Each project has a separate environment.
-* Record requirements and configuration changes.
 
 ## Featues
 
@@ -34,14 +28,19 @@ Add ~/dev/bin to the PATH variable:
 
 ```sh
 echo "export PATH=$PATH:~/dev/bin" >> ~/.bashrc
-ln -s ~/dev/bin/dev.bash ~/dev/bin/dev
 ```
 
 Or link ~/dev/bin/dev.bash to a PATH directory:
 
 ```sh
 ln -s ~/dev/bin/dev.bash ~/.local/bin/dev
-ln -s ~/dev/bin/dev.bash ~/dev/bin/dev
+ln -s ~/dev/bin/dev-bootstrap.bash ~/.local/bin/dev-bootstrap
+```
+
+Create a configuration file:
+
+```sh
+cp ~/dev/etc/dev.conf.example ~/dev/etc/dev.conf
 ```
 
 The installation is complete, enter `dev --help` at the command line to see how to use it.
@@ -49,18 +48,19 @@ The installation is complete, enter `dev --help` at the command line to see how 
 If you want to use the command auto completion, run the following command:
 
 ```sh
-cat ~/dev/lib/completion.bash >> ~/.bash_completion
+cat ~/dev/share/completion.bash >> ~/.bash_completion
 ```
 
 ## Usage
 
 ```sh
-dev [-options] [project] <cmd-file> <cmd-func> [arguments...]
+dev [--sudo] [--trace] [--verbose] <cmd-file> <cmd-function> [arguments...]
+dev [--help] [--version]
 ```
 
 [dev](https://github.com/liudng/dev)'s custom commands are saved in the cmd directory, and the file extension
 must be `.bash`, In the help topic it is named **cmd-file**. In each command
-file, **cmd-func** is prefixed with *cmd_*.
+file, **cmd-function** is prefixed with *cmd_*.
 
 ## Example
 
@@ -78,7 +78,7 @@ And then type the following command to run:
 dev demo helloworld
 ```
 
-In the above command, **demo** is cmd-file. **helloworld** is cmd-func.
+In the above command, **demo** is cmd-file. **helloworld** is cmd-function.
 
 > You can save all project-related commands in the cmd directory.
 

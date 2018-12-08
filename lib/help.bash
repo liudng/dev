@@ -3,7 +3,9 @@
 # license that can be found in the LICENSE file.
 
 dev_kernel_help_usage() {
-    echo "Usage: dev [--[options[=args]]] <prj> [--[options[=args]]] <cmd-file> <cmd-func> [cmd-args...]"
+    echo "Usage: $dev_global_project [--sudo] [--trace] [--verbose] <cmd-file> <cmd-function>"
+    echo "           [cmd-arguments...]"
+    echo "       $dev_global_project [--help] [--version]"
     echo ""
     echo "Optional arguments:"
     echo "  --help             Help topic and usage information"

@@ -6,11 +6,10 @@
 # Use readonly or declare -r to ensure they're read only.
 
 # Projects
-# declare -Agr dev_conf_projects=(
-#     [dev]=/path/to/dev
-#     [sys]=/path/to/sys
-#     [app]=/path/to/app
-# )
+declare -Ag dev_conf_projects=(
+    [dev]=$dev_global_base
+    # [your_project_name]=/path/to/project
+)
 
 # Private key path
 readonly dev_conf_ssh_key="id_rsa"

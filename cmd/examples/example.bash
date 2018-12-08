@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+dev_import dev file
+
 cmd_helloworld() {
     echo "$(whoami)"
     for i in `seq 1 3`; do

@@ -1,3 +1,7 @@
+# Copyright 2016 The dev Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
 cmd_demo1() {
     # ./.git/ close_write,CLOSE index.lock
     # Pool performance
