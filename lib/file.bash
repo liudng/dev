@@ -1,4 +1,4 @@
-dev_basename() {
+dev_file_basename() {
     [ $# -lt 1 ] && return 1
     declare str="$(basename $1)"
     case "$str" in

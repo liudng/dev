@@ -88,7 +88,7 @@ dev_extra() {
 dev_download_and_extra() {
     [[ $# -lt 3 ]] && echo "Usage: dev_dextra <url> <fname> <strip-components>" >&2 && return 1
     declare url="$1" fname="$2"
-    declare exdir="$(dev_basename $fname)"
+    declare exdir="$(dev_file_basename $fname)"
     dev_download $url $fname
     dev_extra $fname $exdir $3
 }
