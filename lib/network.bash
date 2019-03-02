@@ -35,7 +35,7 @@ dev_download() {
     [ -z $2 ] && local fname=$(basename $1) || local fname=$2
     [ -z $fname ] && return 1
 
-    declare opts fp=$dev_global_wkdir/var/downloads/$fname tfp=/tmp/$fname
+    declare opts fp=$dev_global_wkdir/var/downloads/$fname tfp=$dev_global_wkdir/var/tmp/$fname
 
     if [[ -f $fp ]]; then
         dev_verbose "File exists: $fp"
