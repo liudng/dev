@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-declare -gr dev_global_ssh_key="$HOME/.ssh/$cfg_ssh_key"
+declare -gr dev_global_ssh_key="$HOME/.ssh/$dev_conf_ssh_key"
 
 dev_import dev io
 
@@ -45,7 +45,7 @@ dev_download() {
     # Delete temp file
     [[ -f $tfp ]] && rm -f $tfp
 
-    [ ! -z $cfg_proxy ] && opts="-k -x $cfg_proxy"
+    [ ! -z $dev_conf_proxy ] && opts="-k -x $dev_conf_proxy"
 
     declare cmd="curl $opts -L $1 -o $tfp"
 

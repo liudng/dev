@@ -12,7 +12,7 @@ declare -Ag dev_conf_projects=(
 )
 
 # Private key path
-readonly dev_conf_ssh_key="id_rsa"
+declare -g dev_conf_ssh_key="id_rsa"
 
 # [protocol://][user:password@]proxyhost[:port]
-# readonly cfg_proxy=""
+# declare -g dev_conf_proxy=""
