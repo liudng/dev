@@ -19,3 +19,28 @@ dev_dnf() {
     dev_verbose "$cmd"
     $cmd
 }
+
+#
+# Usage:
+#     dev_rpm_install <url>
+#
+dev_rpm_install() {
+    declare fname=$(basename $1)
+    dev_download $1 $fname
+
+    # fname no extension: ${fname%.*}
+    rpm -q ${fname%.*} || rpm -Uvh $dev_global_wkdir/var/downloads/$fname
+}
+
+#
+# Writing grub.
+#
+dev_grub2_mkconfig() {
+    if [ -f /boot/efi/EFI/fedora/grub.cfg ]; then
+        grub2-mkconfig -o /boot/efi/EFI/fedora/grub.cfg
+    else
+        grub2-mkconfig -o /boot/grub2/grub.cfg
+    fi
+}
+
+
