@@ -1,7 +1,12 @@
-#!/bin/bash
 # Copyright 2017 The dev Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
+
+# trace ERR through pipes
+set -o pipefail
+
+# set -e : exit the script if any statement returns a non-true return value
+set -o errexit
 
 [ $# -lt 1 ] && echo "Usage: dev sudoer <sudoer>" >&2 && return 1
 

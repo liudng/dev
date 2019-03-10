@@ -17,7 +17,14 @@ cmd_sleep() {
 }
 
 cmd_basename() {
-    dev_basename "abc-1.2.0.tar.gz"
-    dev_basename "abc-1.2.0.tar.bz2"
-    dev_basename "abc-1.2.0.tgz"
+    echo "file-1.2.0.tar.gz"
+    dev_file_basename "file-1.2.0.tar.gz"
+    echo "file-1.2.0.tar.bz2"
+    dev_file_basename "file-1.2.0.tar.bz2"
+    echo "file-1.2.0.tgz"
+    dev_file_basename "file-1.2.0.tgz"
+}
+
+cmd_interactive() {
+    [[ $- == *i* ]] && echo 'Interactive' || echo 'Not interactive'
 }

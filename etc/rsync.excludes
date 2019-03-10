@@ -1,6 +1,5 @@
-.git
 etc/dev.conf
-src/*
+src/
 tags
-usr/*
-var/*
+usr/
+var/

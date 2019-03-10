@@ -104,6 +104,26 @@ In the above command, **demo** is cmd-file. **helloworld** is cmd-function.
 
 More examples, see the files in th [cmd](https://github.com/liudng/dev/tree/master/cmd) directory.
 
+## The Library Scripts
+
+Import a library script to current command file, Add following line to file start:
+
+```sh
+dev_import dev file
+```
+
+It will load the script file from dev project's lib/file.bash.
+
+## Global Variables Reference
+
+* `$dev_global_project` The project name.
+* `$dev_global_base` The project base directory.
+
+## Global Functions Reference
+
+* `dev_import` Import a library file to current file.
+* `dev_run`
+
 ## Multi-project
 
 Using [dev](https://github.com/liudng/dev) to manage multiple projects is very easy.
@@ -114,6 +134,6 @@ More project examples, see the [sys](https://github.com/liudng/sys) project.
 
 ## Copyright
 
-Copyright 2017 The [dev](https://github.com/liudng/dev) Authors. All rights reserved.
+Copyright 2018 The [dev](https://github.com/liudng/dev) Authors. All rights reserved.
 
 Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.

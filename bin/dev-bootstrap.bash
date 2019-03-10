@@ -44,7 +44,7 @@ dev_kernel_optional_arguments() {
 }
 
 # The dev package version
-declare -gr dev_global_version="2.0.1"
+declare -gr dev_global_version="2.1.0"
 
 # The dev execution file path
 declare -gr dev_global_self="$(realpath $0)"
