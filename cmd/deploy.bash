@@ -33,7 +33,8 @@ cmd_init() {
         echo "complete -F _dev_init_completion $prj" >> $HOME/.bash_completion
 
     if [ ! -f $wkdir/bin/$prj.bash ]; then
-        echo "dev-bootstrap $prj \$@" > $wkdir/bin/$prj.bash
+        echo "#!/bin/bash" > $wkdir/bin/$prj.bash
+        echo "dev-bootstrap $prj \$@" >> $wkdir/bin/$prj.bash
         chmod a+x $wkdir/bin/$prj.bash
     fi
 
@@ -92,8 +93,6 @@ cmd_rsync() {
     # -z, --compress              compress file data during the transfer
     # --delete
     rsync -alprz \
-        --delete \
-        --cvs-exclude \
         --exclude-from=$dev_global_base/etc/rsync.excludes \
         $wkdir $user_and_host:\$HOME
 }
