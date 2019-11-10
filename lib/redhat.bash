@@ -11,7 +11,8 @@ dev_dnf() {
     # -4     Resolve to IPv4 addresses only.
     # --allowerasing
     #        Allow  erasing  of  installed  packages  to  resolve dependencies.
-    declare cmd="dnf -y --allowerasing -4  --setop=\"install_weak_deps=False\" $@"
+    #  --setop=\"install_weak_deps=False\"
+    declare cmd="dnf -y --allowerasing -4 $@"
     if ! command -v dnf > /dev/null; then
         # Compatible with CentOS 6.x/7.x
         cmd="yum -y $@"

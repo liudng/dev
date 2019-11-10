@@ -86,7 +86,6 @@ cmd_rsync() {
 
     # -a, --archive               archive mode; equals -rlptgoD (no -H,-A,-X)
     # -C, --cvs-exclude           auto-ignore files in the same way CVS does
-    # -d, --dirs                  transfer directories without recursing
     # -l, --links                 copy symlinks as symlink
     # -p, --perms                 preserve permissions
     # -r, --recursive             recurse into directories
