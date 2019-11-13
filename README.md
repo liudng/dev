@@ -34,7 +34,7 @@ Or link ~/dev/bin/dev.bash to a PATH directory:
 
 ```sh
 ln -s ~/dev/bin/dev.bash ~/.local/bin/dev
-ln -s ~/dev/bin/dev-bootstrap.bash ~/.local/bin/dev-bootstrap
+ln -s ~/dev/bin/dev-bootstrap.bash ~/.local/bin/dev-bootstrap.bash
 ```
 
 Create a configuration file:

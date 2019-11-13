@@ -32,21 +32,15 @@ cmd_init() {
     grep -q "complete -F _dev_init_completion $prj" $HOME/.bash_completion || \
         echo "complete -F _dev_init_completion $prj" >> $HOME/.bash_completion
 
-    if [ ! -f $wkdir/bin/$prj.bash ]; then
-        echo "#!/bin/bash" > $wkdir/bin/$prj.bash
-        echo "dev-bootstrap $prj \$@" >> $wkdir/bin/$prj.bash
-        chmod a+x $wkdir/bin/$prj.bash
+    if [ ! -f $wkdir/bin/$prj ]; then
+        echo "#!/bin/bash" > $wkdir/bin/$prj
+        echo "dev-bootstrap.bash $prj \$@" >> $wkdir/bin/$prj
+        chmod a+x $wkdir/bin/$prj
     fi
 
-    if [ ! -L $wkdir/bin/$prj ]; then
-        cd $wkdir/bin
-        ln -s $prj.bash $prj
-    fi
-
-    [ -L $HOME/bin/dev ] || ln -s $dev_global_base/bin/dev.bash $HOME/bin/dev
-    [ -L $HOME/bin/dev-bootstrap ] || ln -s $dev_global_base/bin/dev-bootstrap.bash $HOME/bin/dev-bootstrap
-
-    [ -L $HOME/bin/$prj ] || ln -s $wkdir/bin/$prj.bash $HOME/bin/$prj
+    # [ -L $HOME/bin/dev ] || ln -s $dev_global_base/bin/dev $HOME/bin/dev
+    [ -L $HOME/bin/dev-bootstrap.bash ] || ln -s $dev_global_base/bin/dev-bootstrap.bash $HOME/bin/dev-bootstrap.bash
+    [ -L $HOME/bin/$prj ] || ln -s $wkdir/bin/$prj $HOME/bin/$prj
 
     if [ ! -f $wkdir/.gitignore ]; then
         echo "/src" > $wkdir/.gitignore

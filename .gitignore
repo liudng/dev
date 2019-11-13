@@ -1,7 +1,9 @@
-**~
-**.bak
-**.log
-**.swp
+*~
+*.bak
+*.log
+*.swp
+.session.vim
+.session.viminfo
 tags
 /*.sublime-*
 /etc/dev.conf
