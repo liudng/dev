@@ -12,7 +12,7 @@ cmd_init() {
 
     if [[ -z "${dev_conf_projects[$1]}" ]]; then
         dev_error "Project not found, add the following line to $dev_global_base/etc/dev.conf:" >&2
-        dev_error "  [$prj]=/home/ld/$prj" >&2
+        dev_error "  [$prj]=$HOME/$prj" >&2
         return 1
     fi
 
@@ -71,7 +71,7 @@ cmd_rsync() {
 
     if [[ -z "${dev_conf_projects[$1]}" ]]; then
         dev_error "Project not found, add the following line to $dev_global_base/etc/dev.conf:" >&2
-        dev_error "  [$prj]=/home/ld/$prj" >&2
+        dev_error "  [$prj]=$HOME/$prj" >&2
         return 1
     fi
 
