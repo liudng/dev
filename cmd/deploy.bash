@@ -57,6 +57,16 @@ cmd_init() {
     dev_verbose "done"
 }
 
+cmd_nopasswd() {
+    [ $# -lt 1 ] && dev_error "Usage: dev deploy nopasswd <sudoer>" >&2 && return 1
+
+    declare sudoer="$1"
+
+    # No-password
+    mkdir -p /etc/sudoers.d
+    echo "$sudoer ALL=NOPASSWD: ALL" > /etc/sudoers.d/$sudoer-nopasswd
+
+}
 #
 # Usage:
 #     dev deploy rsync <prj> <user_and_host>
@@ -85,9 +95,11 @@ cmd_rsync() {
     # -r, --recursive             recurse into directories
     # -z, --compress              compress file data during the transfer
     # --delete
-    rsync -alprz \
-        --exclude-from=$dev_global_base/etc/rsync.excludes \
-        $wkdir $user_and_host:\$HOME
+    #rsync -alprz \
+    #    --exclude-from=$dev_global_base/etc/rsync.excludes \
+    #    $wkdir $user_and_host:\$HOME
+
+    scp -r -p $wkdir $user_and_host:\$HOME/.
 }
 
 cmd_sudoer() {
@@ -102,3 +114,16 @@ cmd_sudoer() {
 
     dev_verbose "done"
 }
+
+cmd_hostname() {
+    declare host_name="$(hostname)"
+
+    # [ $# -ge 1 ] && host_name="$1"
+    # hostnamectl set-hostname $1
+
+    grep -q "127.0.0.1[[:space:]]\{1,\}$host_name" /etc/hosts || \
+        sed -i "\$a 127.0.0.1   $host_name" /etc/hosts
+    grep -q "::1[[:space:]]\{1,\}$host_name" /etc/hosts || \
+        sed -i "\$a ::1         $host_name" /etc/hosts
+}
+

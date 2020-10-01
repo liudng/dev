@@ -28,3 +28,14 @@ cmd_basename() {
 cmd_interactive() {
     [[ $- == *i* ]] && echo 'Interactive' || echo 'Not interactive'
 }
+
+cmd_cond() {
+    if [[ $# -ge 1 && "$1" =~ ^(xorg|wayland)$ ]]; then
+        echo "matched: $1"
+    fi
+
+    if [[ $# -ge 2 && ! "$2" =~ ^(none)$ ]]; then
+        echo "not none: $2"
+    fi
+
+}
