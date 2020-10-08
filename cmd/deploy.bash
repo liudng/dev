@@ -16,7 +16,7 @@ cmd_init() {
         return 1
     fi
 
-    mkdir -p $HOME/bin $HOME/.local/{bin,lib,lib64,share}
+    mkdir -p $HOME/.local/{bin,lib,lib64,share}
     mkdir -p $wkdir/{bin,cmd,etc,lib,src,usr} $wkdir/var/downloads
     mkdir -m a+w -p $wkdir/var/{log,tmp}
 
@@ -39,8 +39,8 @@ cmd_init() {
     fi
 
     # [ -L $HOME/bin/dev ] || ln -s $dev_global_base/bin/dev $HOME/bin/dev
-    [ -L $HOME/bin/dev-bootstrap.bash ] || ln -s $dev_global_base/bin/dev-bootstrap.bash $HOME/bin/dev-bootstrap.bash
-    [ -L $HOME/bin/$prj ] || ln -s $wkdir/bin/$prj $HOME/bin/$prj
+    [ -L $HOME/.local/bin/dev-bootstrap.bash ] || ln -s $dev_global_base/bin/dev-bootstrap.bash $HOME/.local/bin/dev-bootstrap.bash
+    [ -L $HOME/.local/bin/$prj ] || ln -s $wkdir/bin/$prj $HOME/.local/bin/$prj
 
     if [ ! -f $wkdir/.gitignore ]; then
         echo "/src" > $wkdir/.gitignore
