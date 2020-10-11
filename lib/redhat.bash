@@ -45,4 +45,3 @@ dev_grub2_mkconfig() {
     fi
 }
 
-
