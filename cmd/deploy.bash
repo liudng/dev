@@ -115,7 +115,7 @@ cmd_sudoer() {
     dev_verbose "done"
 }
 
-cmd_hostname() {
+cmd_hosts() {
     declare host_name="$(hostname)"
 
     # [ $# -ge 1 ] && host_name="$1"

@@ -4,6 +4,7 @@
 
 declare -gr dev_global_ssh_key="$HOME/.ssh/$dev_conf_ssh_key"
 
+dev_import dev file
 dev_import dev io
 
 #

@@ -39,3 +39,13 @@ cmd_cond() {
     fi
 
 }
+
+cmd_cond2() {
+    declare file="/etc/yum.repos.d/fedora.repo"
+
+    if [[ "$1" == baseurl ]] && grep -q '^#baseurl' $file; then
+        echo "find #baseurl"
+    elif [[ "$1" == metalink ]] && grep -q '^#metalink' $file; then
+        echo "find #metalink"
+    fi
+}
